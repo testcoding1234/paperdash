@@ -3,7 +3,32 @@ import type { DashboardState, WidgetConfig } from '../types';
 const STORAGE_KEY = 'paperdash_state';
 
 const defaultState: DashboardState = {
-  widgets: [],
+  widgets: [
+    {
+      id: 'weather-default',
+      type: 'weather',
+      enabled: true,
+      size: 'M',
+      order: 0,
+      settings: { locationCode: '130000', locationName: '東京' },
+    },
+    {
+      id: 'github-default',
+      type: 'github',
+      enabled: true,
+      size: 'L',
+      order: 1,
+      settings: { username: '', token: '', range: 30 },
+    },
+    {
+      id: 'todo-default',
+      type: 'todo',
+      enabled: true,
+      size: 'M',
+      order: 2,
+      settings: { items: [] },
+    },
+  ],
   layout: '1-column',
   settings: {
     defaultLocation: '130000',
