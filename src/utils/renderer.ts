@@ -75,23 +75,3 @@ export const downloadCanvas = async (canvas: HTMLCanvasElement, filename: string
     console.error('Download failed:', error);
   }
 };
-
-// Quantize color to e-paper palette
-export const quantizeColor = (r: number, g: number, b: number): string => {
-  // Simple quantization to 4-color palette
-  const brightness = (r + g + b) / 3;
-  
-  if (brightness < 64) return E_PAPER_COLORS.black;
-  if (brightness > 192) return E_PAPER_COLORS.white;
-  
-  // Check for red/yellow hues
-  if (r > g + 50 && r > b + 50) {
-    return r > 200 ? E_PAPER_COLORS.red : E_PAPER_COLORS.black;
-  }
-  
-  if (r > 200 && g > 200 && b < 100) {
-    return E_PAPER_COLORS.yellow;
-  }
-  
-  return brightness > 128 ? E_PAPER_COLORS.white : E_PAPER_COLORS.black;
-};

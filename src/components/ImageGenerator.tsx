@@ -12,6 +12,7 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({ dashboardRef, on
   const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     generateImage();
   }, []);
 

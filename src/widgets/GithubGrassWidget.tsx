@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { WidgetProps, GithubSettings } from '../types';
 import { fetchGithubContributions } from '../utils/github';
-import type { GithubData } from '../utils/github';
+import type { GithubData, ContributionDay } from '../utils/github';
 
 export const GithubGrassWidget: React.FC<WidgetProps> = ({ config }) => {
   const [data, setData] = useState<GithubData | null>(null);
@@ -78,8 +78,8 @@ export const GithubGrassWidget: React.FC<WidgetProps> = ({ config }) => {
   };
 
   // Group by weeks
-  const weeks: any[][] = [];
-  let currentWeek: any[] = [];
+  const weeks: ContributionDay[][] = [];
+  let currentWeek: ContributionDay[] = [];
   
   data?.contributions.forEach((day, index) => {
     currentWeek.push(day);
