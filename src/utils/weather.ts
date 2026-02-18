@@ -4,6 +4,30 @@ export interface WeatherData {
   locationName: string;
 }
 
+// Map weather conditions to emojis
+const WEATHER_EMOJI_MAP: Array<{ keywords: string[]; emoji: string }> = [
+  { keywords: ['晴', 'sunny', 'clear'], emoji: '☀️' },
+  { keywords: ['曇', 'cloud'], emoji: '☁️' },
+  { keywords: ['雨', 'rain'], emoji: '🌧️' },
+  { keywords: ['雪', 'snow'], emoji: '❄️' },
+  { keywords: ['雷', 'thunder'], emoji: '⚡' },
+  { keywords: ['霧', 'fog', 'mist'], emoji: '🌫️' },
+  { keywords: ['風', 'wind'], emoji: '💨' },
+];
+
+export const getWeatherEmoji = (condition: string): string => {
+  const conditionLower = condition.toLowerCase();
+  
+  for (const { keywords, emoji } of WEATHER_EMOJI_MAP) {
+    if (keywords.some((keyword) => conditionLower.includes(keyword))) {
+      return emoji;
+    }
+  }
+  
+  // Default emoji for unknown conditions
+  return '🌤️';
+};
+
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 const weatherCache = new Map<string, { data: WeatherData; timestamp: number }>();
 
