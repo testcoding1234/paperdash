@@ -29,7 +29,6 @@ export const JAPANESE_LABELS = {
   settingsTitle: '設定',
   weatherLocation: '天気の地域',
   githubUsername: 'GitHubユーザー名',
-  githubToken: 'GitHubトークン (任意)',
   grassRange: '草の表示期間',
   days7: '7日',
   days30: '30日',

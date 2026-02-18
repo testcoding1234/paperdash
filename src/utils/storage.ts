@@ -37,11 +37,71 @@ const defaultState: DashboardState = {
   },
 };
 
+/**
+ * List of sensitive keys to be removed from state
+ * These keys should never be stored in localStorage
+ */
+const SENSITIVE_KEYS = ['token', 'githubToken', 'auth', 'secret'];
+
+/**
+ * Recursively remove sensitive keys from an object
+ * This ensures no tokens or secrets remain in the state
+ */
+function removeSensitiveKeys(obj: unknown): unknown {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(removeSensitiveKeys);
+  }
+
+  if (typeof obj === 'object') {
+    const cleaned: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      // Skip sensitive keys at any level
+      if (SENSITIVE_KEYS.includes(key)) {
+        continue;
+      }
+      // Recursively clean nested objects
+      cleaned[key] = removeSensitiveKeys(value);
+    }
+    return cleaned;
+  }
+
+  return obj;
+}
+
+/**
+ * Migrate old state to remove sensitive data
+ * This function is called automatically on loadState()
+ * to ensure old tokens are removed from localStorage
+ */
+function migrateState(state: unknown): unknown {
+  if (!state || typeof state !== 'object') {
+    return state;
+  }
+
+  // Remove all sensitive keys recursively
+  const cleaned = removeSensitiveKeys(state);
+
+  return cleaned;
+}
+
 export const loadState = (): DashboardState => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      return { ...defaultState, ...JSON.parse(saved) };
+      const parsed = JSON.parse(saved);
+      
+      // Automatically migrate old state to remove sensitive data
+      const migrated = migrateState(parsed) as Record<string, unknown>;
+      
+      // Save the cleaned state back to localStorage
+      // This ensures old tokens are permanently removed
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      
+      return { ...defaultState, ...migrated } as DashboardState;
     }
   } catch (error) {
     console.error('Failed to load state:', error);
@@ -51,7 +111,9 @@ export const loadState = (): DashboardState => {
 
 export const saveState = (state: DashboardState): void => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    // Remove sensitive keys before saving to prevent accidental storage
+    const cleaned = removeSensitiveKeys(state);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
   } catch (error) {
     console.error('Failed to save state:', error);
   }
