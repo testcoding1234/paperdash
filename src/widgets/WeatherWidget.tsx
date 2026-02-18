@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { WidgetProps, WeatherSettings } from '../types';
-import { fetchWeather } from '../utils/weather';
+import { fetchWeather, getWeatherEmoji } from '../utils/weather';
 import type { WeatherData } from '../utils/weather';
 
 export const WeatherWidget: React.FC<WidgetProps> = ({ config }) => {
@@ -43,8 +43,13 @@ export const WeatherWidget: React.FC<WidgetProps> = ({ config }) => {
   return (
     <div className={`border-2 border-black bg-white ${getSizeClasses()}`}>
       <div className="font-bold mb-1">天気 - {weather?.locationName}</div>
-      <div className="text-2xl font-bold mb-1">{weather?.temperature}°C</div>
-      <div className="text-sm">{weather?.condition}</div>
+      <div className="flex items-center gap-2">
+        <span className="text-3xl">{getWeatherEmoji(weather?.condition || '')}</span>
+        <div>
+          <div className="text-2xl font-bold">{weather?.temperature}°C</div>
+          <div className="text-sm">{weather?.condition}</div>
+        </div>
+      </div>
     </div>
   );
 };

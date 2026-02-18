@@ -73,8 +73,8 @@ function App() {
     <div className="min-h-screen bg-white p-4 md:p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-6 border-4 border-black bg-white p-4">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 border-4 border-black bg-white p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
             <h1 className="text-3xl font-bold">{JAPANESE_LABELS.appTitle}</h1>
             <button
               onClick={() => setShowSettings(true)}
@@ -84,7 +84,7 @@ function App() {
             </button>
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <button
               onClick={() => setShowAddWidget(true)}
               className="border-2 border-black px-4 py-2 font-bold hover:bg-black hover:text-white"
@@ -99,7 +99,7 @@ function App() {
               {JAPANESE_LABELS.generateImage}
             </button>
 
-            <div className="ml-auto flex gap-2">
+            <div className="sm:ml-auto flex gap-2">
               <button
                 onClick={() => handleLayoutChange('1-column')}
                 className={`border-2 border-black px-4 py-2 font-bold ${
@@ -125,9 +125,9 @@ function App() {
         </div>
 
         {/* Main content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="flex flex-col lg:flex-row gap-4">
           {/* Widget list */}
-          <div className="lg:col-span-1">
+          <div className="lg:w-1/3">
             <WidgetList
               widgets={state.widgets}
               onMove={handleMoveWidget}
@@ -139,7 +139,7 @@ function App() {
           </div>
 
           {/* Dashboard preview */}
-          <div className="lg:col-span-2">
+          <div className="lg:w-2/3">
             <div className="border-4 border-black bg-white p-4">
               <h3 className="font-bold text-lg mb-4">プレビュー</h3>
               <div ref={dashboardRef}>
