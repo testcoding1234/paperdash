@@ -58,24 +58,6 @@ export const Settings: React.FC<SettingsProps> = ({ state, onUpdate, onClose }) 
 
           <div>
             <label className="block font-bold mb-2">
-              {JAPANESE_LABELS.githubToken}
-            </label>
-            <input
-              type="password"
-              value={settings.githubToken || ''}
-              onChange={(e) =>
-                setSettings({ ...settings, githubToken: e.target.value })
-              }
-              className="w-full border-2 border-black p-2"
-              placeholder="ghp_..."
-            />
-            <div className="text-xs mt-1 text-gray-600">
-              プライベートリポジトリの貢献を含める場合のみ
-            </div>
-          </div>
-
-          <div>
-            <label className="block font-bold mb-2">
               {JAPANESE_LABELS.grassRange}
             </label>
             <div className="flex gap-4">

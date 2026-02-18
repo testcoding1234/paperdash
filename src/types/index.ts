@@ -18,7 +18,6 @@ export interface WeatherSettings {
 
 export interface GithubSettings {
   username: string;
-  token?: string;
   range: GrassRange;
 }
 
@@ -38,7 +37,6 @@ export interface DashboardState {
   settings: {
     defaultLocation: string;
     githubUsername: string;
-    githubToken?: string;
     grassRange: GrassRange;
   };
 }

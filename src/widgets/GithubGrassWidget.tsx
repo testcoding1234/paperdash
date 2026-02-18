@@ -19,7 +19,6 @@ export const GithubGrassWidget: React.FC<WidgetProps> = ({ config }) => {
       setLoading(true);
       const result = await fetchGithubContributions(
         settings.username,
-        settings.token,
         settings.range || 30
       );
       setData(result);
@@ -27,7 +26,7 @@ export const GithubGrassWidget: React.FC<WidgetProps> = ({ config }) => {
     };
 
     loadContributions();
-  }, [settings.username, settings.token, settings.range]);
+  }, [settings.username, settings.range]);
 
   const getSizeClasses = () => {
     switch (config.size) {
@@ -65,6 +64,16 @@ export const GithubGrassWidget: React.FC<WidgetProps> = ({ config }) => {
       <div className={`border-2 border-black bg-white ${getSizeClasses()}`}>
         <div className="font-bold mb-1">GitHub - {settings.username}</div>
         <div className="text-sm">読み込み中...</div>
+      </div>
+    );
+  }
+
+  // Display error if data fetch failed
+  if (data?.error) {
+    return (
+      <div className={`border-2 border-black bg-white ${getSizeClasses()}`}>
+        <div className="font-bold mb-1">GitHub - {settings.username}</div>
+        <div className="text-sm text-red-600">{data.error}</div>
       </div>
     );
   }
