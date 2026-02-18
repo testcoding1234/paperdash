@@ -46,14 +46,22 @@ const SENSITIVE_KEYS = ['token', 'githubToken', 'auth', 'secret'];
 /**
  * Recursively remove sensitive keys from an object
  * This ensures no tokens or secrets remain in the state
+ * Returns [cleanedObject, hadSensitiveKeys] tuple
  */
-function removeSensitiveKeys(obj: unknown): unknown {
+function removeSensitiveKeys(obj: unknown): [unknown, boolean] {
+  let foundSensitive = false;
+
   if (obj === null || obj === undefined) {
-    return obj;
+    return [obj, false];
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(removeSensitiveKeys);
+    const cleaned = obj.map(item => {
+      const [cleanedItem, hadSensitive] = removeSensitiveKeys(item);
+      if (hadSensitive) foundSensitive = true;
+      return cleanedItem;
+    });
+    return [cleaned, foundSensitive];
   }
 
   if (typeof obj === 'object') {
@@ -61,31 +69,18 @@ function removeSensitiveKeys(obj: unknown): unknown {
     for (const [key, value] of Object.entries(obj)) {
       // Skip sensitive keys at any level
       if (SENSITIVE_KEYS.includes(key)) {
+        foundSensitive = true;
         continue;
       }
       // Recursively clean nested objects
-      cleaned[key] = removeSensitiveKeys(value);
+      const [cleanedValue, hadSensitive] = removeSensitiveKeys(value);
+      if (hadSensitive) foundSensitive = true;
+      cleaned[key] = cleanedValue;
     }
-    return cleaned;
+    return [cleaned, foundSensitive];
   }
 
-  return obj;
-}
-
-/**
- * Migrate old state to remove sensitive data
- * This function is called automatically on loadState()
- * to ensure old tokens are removed from localStorage
- */
-function migrateState(state: unknown): unknown {
-  if (!state || typeof state !== 'object') {
-    return state;
-  }
-
-  // Remove all sensitive keys recursively
-  const cleaned = removeSensitiveKeys(state);
-
-  return cleaned;
+  return [obj, false];
 }
 
 export const loadState = (): DashboardState => {
@@ -94,14 +89,21 @@ export const loadState = (): DashboardState => {
     if (saved) {
       const parsed = JSON.parse(saved);
       
-      // Automatically migrate old state to remove sensitive data
-      const migrated = migrateState(parsed) as Record<string, unknown>;
+      // Automatically remove sensitive data from old state
+      const [cleaned, hadSensitiveKeys] = removeSensitiveKeys(parsed);
       
-      // Save the cleaned state back to localStorage
-      // This ensures old tokens are permanently removed
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      // Only write back if we actually removed sensitive keys
+      // This avoids unnecessary localStorage writes on every load
+      if (hadSensitiveKeys) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
+      }
       
-      return { ...defaultState, ...migrated } as DashboardState;
+      // Validate that cleaned is an object before merging
+      const cleanedState = cleaned && typeof cleaned === 'object' && !Array.isArray(cleaned)
+        ? cleaned
+        : {};
+      
+      return { ...defaultState, ...cleanedState } as DashboardState;
     }
   } catch (error) {
     console.error('Failed to load state:', error);
@@ -112,7 +114,7 @@ export const loadState = (): DashboardState => {
 export const saveState = (state: DashboardState): void => {
   try {
     // Remove sensitive keys before saving to prevent accidental storage
-    const cleaned = removeSensitiveKeys(state);
+    const [cleaned] = removeSensitiveKeys(state);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
   } catch (error) {
     console.error('Failed to save state:', error);
