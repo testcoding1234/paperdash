@@ -5,15 +5,19 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build && ./scripts/check-secrets.sh",
+    "build": "tsc && vite build && node scripts/check-secrets.mjs",
     "preview": "vite preview",
-    "check-secrets": "./scripts/check-secrets.sh"
+    "check-secrets": "node scripts/check-secrets.mjs"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/testcoding1234/paperdash.git"
   },
-  "keywords": ["pwa", "dashboard", "personal"],
+  "keywords": [
+    "pwa",
+    "dashboard",
+    "personal"
+  ],
   "author": "",
   "license": "MIT",
   "bugs": {
@@ -26,6 +30,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.4",
     "autoprefixer": "^10.4.24",
+    "cross-env": "^10.1.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
