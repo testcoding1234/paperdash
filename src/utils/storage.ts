@@ -104,3 +104,56 @@ export const deleteWidget = (widgets: WidgetConfig[], id: string): WidgetConfig[
     .filter((w) => w.id !== id)
     .map((w, i) => ({ ...w, order: i }));
 };
+
+/**
+ * Redact sensitive data for logging
+ * Prevents token leakage in console logs and error messages
+ */
+export function redactSensitiveData(data: unknown): unknown {
+  if (typeof data === 'string') {
+    // Never log tokens or sensitive patterns
+    if (data.startsWith('ghp_') || data.startsWith('github_pat_')) {
+      return '[REDACTED_TOKEN]';
+    }
+    return data;
+  }
+  
+  if (Array.isArray(data)) {
+    return data.map(redactSensitiveData);
+  }
+  
+  if (data && typeof data === 'object') {
+    const redacted: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data)) {
+      // Redact token fields
+      if (key.toLowerCase().includes('token') || key.toLowerCase().includes('secret')) {
+        redacted[key] = '[REDACTED]';
+      } else {
+        redacted[key] = redactSensitiveData(value);
+      }
+    }
+    return redacted;
+  }
+  
+  return data;
+}
+
+/**
+ * Sanitize user input to prevent injection attacks
+ * Removes control characters and trims whitespace
+ */
+export function sanitizeInput(input: string): string {
+  return input.replace(/[\u0000-\u001F\u007F-\u009F]/g, '').trim();
+}
+
+/**
+ * Validate GitHub username format
+ * Ensures username matches GitHub's rules
+ */
+export function validateGitHubUsername(username: string): boolean {
+  if (!username) return false;
+  
+  // GitHub usernames: alphanumeric and hyphens, max 39 chars, cannot start/end with hyphen
+  const usernameRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/;
+  return usernameRegex.test(username);
+}
