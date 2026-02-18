@@ -3,6 +3,44 @@
 ## Overview
 This document summarizes all security features implemented in PaperDash, a personal-use PWA dashboard.
 
+## Recent Security Improvements (Latest Update)
+
+### 1. Content Security Policy (CSP) Headers ✅
+- **Added**: Comprehensive CSP headers to prevent XSS attacks
+- **Location**: `index.html`
+- **Policy**:
+  - `default-src 'self'` - Only load resources from same origin
+  - `script-src 'self' 'unsafe-inline'` - Allow inline scripts for React (Vite requirement)
+  - `connect-src 'self' https://api.github.com` - Only allow API calls to GitHub
+  - `frame-ancestors 'none'` - Prevent clickjacking
+  - `form-action 'self'` - Prevent form submission to external sites
+
+### 2. Additional Security Headers ✅
+- **X-Content-Type-Options**: `nosniff` - Prevent MIME type sniffing
+- **X-Frame-Options**: `DENY` - Prevent iframe embedding
+- **Referrer-Policy**: `strict-origin-when-cross-origin` - Control referrer information
+- **Permissions-Policy**: Disable geolocation, microphone, camera
+
+### 3. Input Validation & Sanitization ✅
+- **Added**: `sanitizeInput()` function to remove control characters
+- **Added**: `validateGitHubUsername()` function for username validation
+- **Location**: `src/utils/storage.ts`, `src/components/Settings.tsx`
+- **Features**:
+  - Username validation: alphanumeric and hyphens only, max 39 chars
+  - Token sanitization before storage
+  - Control character removal
+
+### 4. Rate Limiting ✅
+- **Added**: API rate limiting to prevent abuse
+- **Location**: `src/utils/github.ts`
+- **Implementation**: Minimum 1 second between API requests
+- **Purpose**: Prevent accidental DoS and respect GitHub API limits
+
+### 5. Enhanced Input Security ✅
+- **Token input**: `autocomplete="off"` and `spellCheck="false"`
+- **Username input**: `maxLength="39"` and proper `autoComplete` attribute
+- **Purpose**: Prevent browser from caching sensitive data
+
 ## 1. Safe Token Handling ✅
 
 ### Implementation Details

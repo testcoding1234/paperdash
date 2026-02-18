@@ -2,7 +2,7 @@
  * GitHub API utilities with secure token handling
  */
 
-import { redactSensitiveData } from './storage';
+import { redactSensitiveData, sanitizeInput } from './storage';
 import { GITHUB_API_URL } from './constants';
 
 export interface ContributionDay {
@@ -16,14 +16,33 @@ export interface ContributionData {
   days: ContributionDay[];
 }
 
+// Rate limiting: track last request time
+let lastRequestTime = 0;
+const MIN_REQUEST_INTERVAL = 1000; // 1 second between requests
+
 /**
  * Fetch GitHub contribution data
  * NEVER logs token or includes it in error messages
+ * Includes rate limiting to prevent abuse
  */
 export async function fetchGitHubContributions(
   username: string,
   token?: string
 ): Promise<ContributionData> {
+  // Rate limiting check
+  const now = Date.now();
+  const timeSinceLastRequest = now - lastRequestTime;
+  if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
+    const waitTime = MIN_REQUEST_INTERVAL - timeSinceLastRequest;
+    await new Promise(resolve => setTimeout(resolve, waitTime));
+  }
+  lastRequestTime = Date.now();
+
+  // Sanitize username to prevent injection
+  const sanitizedUsername = sanitizeInput(username);
+  if (!sanitizedUsername) {
+    throw new Error('Invalid username');
+  }
   const query = `
     query($userName: String!) {
       user(login: $userName) {
@@ -49,7 +68,8 @@ export async function fetchGitHubContributions(
 
   // Add authorization header ONLY if token is provided
   if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+    const sanitizedToken = sanitizeInput(token);
+    headers['Authorization'] = `Bearer ${sanitizedToken}`;
   }
 
   try {
@@ -58,7 +78,7 @@ export async function fetchGitHubContributions(
       headers,
       body: JSON.stringify({
         query,
-        variables: { userName: username },
+        variables: { userName: sanitizedUsername },
       }),
     });
 

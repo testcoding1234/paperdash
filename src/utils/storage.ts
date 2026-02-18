@@ -168,3 +168,22 @@ export function redactSensitiveData(data: unknown): unknown {
   
   return data;
 }
+
+/**
+ * Sanitize user input to prevent injection attacks
+ */
+export function sanitizeInput(input: string): string {
+  // Remove any control characters and trim whitespace
+  return input.replace(/[\u0000-\u001F\u007F-\u009F]/g, '').trim();
+}
+
+/**
+ * Validate GitHub username format
+ */
+export function validateGitHubUsername(username: string): boolean {
+  if (!username) return false;
+  
+  // GitHub usernames: alphanumeric and hyphens, max 39 chars, cannot start/end with hyphen
+  const usernameRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/;
+  return usernameRegex.test(username);
+}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ChangeEvent } from 'react';
-import { secureStorage, STORAGE_KEYS } from '../utils/storage';
+import { secureStorage, STORAGE_KEYS, sanitizeInput, validateGitHubUsername } from '../utils/storage';
 import { validateGitHubToken } from '../utils/github';
 
 interface SettingsProps {
@@ -30,20 +30,29 @@ export function Settings({ onClose }: SettingsProps) {
   };
 
   const handleSave = () => {
-    // Save token (respects saveToken setting)
+    // Sanitize and validate username
+    const sanitizedUsername = sanitizeInput(username);
+    
+    if (sanitizedUsername && !validateGitHubUsername(sanitizedUsername)) {
+      alert('GitHubユーザー名の形式が正しくありません。英数字とハイフンのみ使用でき、ハイフンで始まる・終わることはできません。');
+      return;
+    }
+    
+    // Validate and save token (respects saveToken setting)
     if (token) {
-      if (!validateGitHubToken(token)) {
+      const sanitizedToken = sanitizeInput(token);
+      if (!validateGitHubToken(sanitizedToken)) {
         alert('トークンの形式が正しくありません。GitHub Personal Access Tokenを入力してください。');
         return;
       }
-      secureStorage.setItem(STORAGE_KEYS.GITHUB_TOKEN, token, saveToken);
+      secureStorage.setItem(STORAGE_KEYS.GITHUB_TOKEN, sanitizedToken, saveToken);
     } else {
       secureStorage.removeItem(STORAGE_KEYS.GITHUB_TOKEN);
     }
     
     // Save username
-    if (username) {
-      secureStorage.setItem(STORAGE_KEYS.SETTINGS, username);
+    if (sanitizedUsername) {
+      secureStorage.setItem(STORAGE_KEYS.SETTINGS, sanitizedUsername);
     }
     
     onClose();
@@ -100,6 +109,8 @@ export function Settings({ onClose }: SettingsProps) {
               onChange={(e) => setUsername(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="例: octocat"
+              autoComplete="username"
+              maxLength={39}
             />
           </div>
 
@@ -115,6 +126,8 @@ export function Settings({ onClose }: SettingsProps) {
                 onChange={handleTokenChange}
                 className="w-full px-3 py-2 pr-20 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                autoComplete="off"
+                spellCheck="false"
               />
               <button
                 type="button"
