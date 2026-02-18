@@ -13,6 +13,8 @@ export interface GithubData {
 }
 
 // Public API endpoint - no authentication required
+// Note: This is a third-party service (https://github.com/grubersjoe/github-contributions-api)
+// that may become unavailable or change format. Consider monitoring API health in production.
 const GITHUB_PUBLIC_API_ENDPOINT = 'https://github-contributions-api.jogruber.de/v4';
 
 export const fetchGithubContributions = async (
@@ -57,21 +59,25 @@ export const fetchGithubContributions = async (
       };
     }
 
+    // Validate response structure
+    if (!result.contributions || !Array.isArray(result.contributions)) {
+      console.error('GitHub API error: Invalid response format');
+      return {
+        contributions: [],
+        totalContributions: 0,
+        error: 'データの取得に失敗しました',
+      };
+    }
+
     // Public API returns all contributions, filter by date range
     const today = new Date();
     const fromDate = new Date(today);
     fromDate.setDate(today.getDate() - days);
     
-    const filteredContributions = result.contributions
-      .filter((day: ContributionDay) => {
-        const dayDate = new Date(day.date);
-        return dayDate >= fromDate && dayDate <= today;
-      })
-      .map((day: ContributionDay) => ({
-        date: day.date,
-        count: day.count,
-        level: day.level,
-      }));
+    const filteredContributions = result.contributions.filter((day: ContributionDay) => {
+      const dayDate = new Date(day.date);
+      return dayDate >= fromDate && dayDate <= today;
+    });
 
     // Calculate total for the filtered range
     const totalContributions = filteredContributions.reduce(
