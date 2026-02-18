@@ -2,6 +2,8 @@
 
 A production-ready, minimal, modular PWA dashboard generator optimized for NFC e-paper displays (Santek EZ Sign 2.9" 4-color).
 
+🌐 **Live Demo**: [https://testcoding1234.github.io/paperdash/](https://testcoding1234.github.io/paperdash/)
+
 ## Overview
 
 PaperDash is a Japanese-language minimal dashboard web application that allows users to design customizable dashboards and export 4-color e-paper optimized PNG images for manual transfer via the EZ Sign NFC official app.
@@ -66,6 +68,19 @@ npm run build
 # Preview production build
 npm run preview
 ```
+
+## Deployment
+
+This project is automatically deployed to GitHub Pages when changes are pushed to the `main` branch.
+
+**Live URL**: [https://testcoding1234.github.io/paperdash/](https://testcoding1234.github.io/paperdash/)
+
+The deployment workflow:
+1. Builds the project with `npm run build`
+2. Runs security checks on the build output
+3. Deploys to GitHub Pages
+
+To manually trigger a deployment, go to the Actions tab and run the "Deploy to GitHub Pages" workflow.
 
 ## Usage
 
