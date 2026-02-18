@@ -3,6 +3,7 @@
  */
 
 import { redactSensitiveData } from './storage';
+import { GITHUB_API_URL } from './constants';
 
 export interface ContributionDay {
   date: string;
@@ -52,7 +53,7 @@ export async function fetchGitHubContributions(
   }
 
   try {
-    const response = await fetch('https://api.github.com/graphql', {
+    const response = await fetch(GITHUB_API_URL, {
       method: 'POST',
       headers,
       body: JSON.stringify({

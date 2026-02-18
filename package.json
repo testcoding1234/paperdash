@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview"
+    "build": "tsc && vite build && ./scripts/check-secrets.sh",
+    "preview": "vite preview",
+    "check-secrets": "./scripts/check-secrets.sh"
   },
   "repository": {
     "type": "git",
