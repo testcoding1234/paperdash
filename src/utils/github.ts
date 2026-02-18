@@ -1,4 +1,4 @@
-import { redactSensitiveData, sanitizeInput } from './storage';
+import { sanitizeInput } from './storage';
 
 export interface ContributionDay {
   date: string;
@@ -9,126 +9,95 @@ export interface ContributionDay {
 export interface GithubData {
   contributions: ContributionDay[];
   totalContributions: number;
+  error?: string;
 }
 
-const GITHUB_GRAPHQL_ENDPOINT = 'https://api.github.com/graphql';
-
-// Rate limiting: track last request time
-let lastRequestTime = 0;
-const MIN_REQUEST_INTERVAL = 1000; // 1 second between requests
+// Public API endpoint - no authentication required
+// Note: This is a third-party service (https://github.com/grubersjoe/github-contributions-api)
+// that may become unavailable or change format. Consider monitoring API health in production.
+const GITHUB_PUBLIC_API_ENDPOINT = 'https://github-contributions-api.jogruber.de/v4';
 
 export const fetchGithubContributions = async (
   username: string,
-  token?: string,
   days: number = 30
 ): Promise<GithubData> => {
-  // Rate limiting check
-  const now = Date.now();
-  const timeSinceLastRequest = now - lastRequestTime;
-  if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
-    const waitTime = MIN_REQUEST_INTERVAL - timeSinceLastRequest;
-    await new Promise(resolve => setTimeout(resolve, waitTime));
-  }
-  lastRequestTime = Date.now();
-
-  // Sanitize username to prevent injection
+  // Validate username before making API call
   const sanitizedUsername = sanitizeInput(username);
   if (!sanitizedUsername) {
-    throw new Error('Invalid username');
+    return {
+      contributions: [],
+      totalContributions: 0,
+      error: 'ユーザー名が無効です',
+    };
   }
 
-  const today = new Date();
-  const fromDate = new Date(today);
-  fromDate.setDate(today.getDate() - days);
-
-  const query = `
-    query($username: String!, $from: DateTime!, $to: DateTime!) {
-      user(login: $username) {
-        contributionsCollection(from: $from, to: $to) {
-          contributionCalendar {
-            totalContributions
-            weeks {
-              contributionDays {
-                date
-                contributionCount
-                contributionLevel
-              }
-            }
-          }
-        }
-      }
-    }
-  `;
-
   try {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    if (token) {
-      const sanitizedToken = sanitizeInput(token);
-      headers['Authorization'] = `Bearer ${sanitizedToken}`;
-    }
-
-    const response = await fetch(GITHUB_GRAPHQL_ENDPOINT, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        query,
-        variables: {
-          username: sanitizedUsername,
-          from: fromDate.toISOString(),
-          to: today.toISOString(),
-        },
-      }),
-    });
+    // Use public API with no authentication
+    const response = await fetch(`${GITHUB_PUBLIC_API_ENDPOINT}/${sanitizedUsername}`);
 
     if (!response.ok) {
-      throw new Error(`GitHub API request failed: ${response.status}`);
+      const errorMessage = response.status === 404 
+        ? `ユーザー "${sanitizedUsername}" が見つかりません`
+        : `GitHub API エラー: ${response.status}`;
+      console.error('GitHub API error:', errorMessage);
+      return {
+        contributions: [],
+        totalContributions: 0,
+        error: errorMessage,
+      };
     }
 
     const result = await response.json();
 
-    if (result.errors) {
-      // Redact any potential sensitive data from errors
-      const safeErrors = redactSensitiveData(result.errors);
-      throw new Error(`GitHub API error: ${JSON.stringify(safeErrors)}`);
+    // Check for API error response
+    if (result.error) {
+      console.error('GitHub API error:', result.error);
+      return {
+        contributions: [],
+        totalContributions: 0,
+        error: 'データの取得に失敗しました',
+      };
     }
 
-    const calendar = result.data?.user?.contributionsCollection?.contributionCalendar;
+    // Validate response structure
+    if (!result.contributions || !Array.isArray(result.contributions)) {
+      console.error('GitHub API error: Invalid response format');
+      return {
+        contributions: [],
+        totalContributions: 0,
+        error: 'データの取得に失敗しました',
+      };
+    }
+
+    // Public API returns all contributions, filter by date range
+    const today = new Date();
+    const fromDate = new Date(today);
+    fromDate.setDate(today.getDate() - days);
     
-    if (!calendar) {
-      throw new Error('No contribution data found');
-    }
-
-    const contributions: ContributionDay[] = [];
-    calendar.weeks.forEach((week: any) => {
-      week.contributionDays.forEach((day: any) => {
-        contributions.push({
-          date: day.date,
-          count: day.contributionCount,
-          level: day.contributionLevel === 'NONE' ? 0 :
-                 day.contributionLevel === 'FIRST_QUARTILE' ? 1 :
-                 day.contributionLevel === 'SECOND_QUARTILE' ? 2 :
-                 day.contributionLevel === 'THIRD_QUARTILE' ? 3 : 4,
-        });
-      });
+    const filteredContributions = result.contributions.filter((day: ContributionDay) => {
+      const dayDate = new Date(day.date);
+      return dayDate >= fromDate && dayDate <= today;
     });
 
+    // Calculate total for the filtered range
+    const totalContributions = filteredContributions.reduce(
+      (sum: number, day: ContributionDay) => sum + day.count,
+      0
+    );
+
     return {
-      contributions,
-      totalContributions: calendar.totalContributions,
+      contributions: filteredContributions,
+      totalContributions,
     };
   } catch (error) {
-    // Log error without sensitive data
-    if (error instanceof Error) {
-      console.error('GitHub API error:', error.message);
-    }
+    // Log error and return explicit error state
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('GitHub API error:', errorMessage);
     
-    // Return empty data
     return {
       contributions: [],
       totalContributions: 0,
+      error: 'データの取得に失敗しました',
     };
   }
 };
