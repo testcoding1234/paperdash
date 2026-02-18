@@ -1,39 +1,191 @@
-import { useState } from 'react';
-import type { FC } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import type { DashboardState, WidgetConfig, LayoutMode, WidgetSize } from './types';
+import { loadState, saveState, updateWidget, moveWidget, addWidget, deleteWidget } from './utils/storage';
+import { WIDGET_REGISTRY } from './widgets';
+import { JAPANESE_LABELS } from './constants';
 import { Dashboard } from './components/Dashboard';
+import { WidgetList } from './components/WidgetList';
 import { Settings } from './components/Settings';
+import { WidgetSettings } from './components/WidgetSettings';
+import { AddWidget } from './components/AddWidget';
+import { ImageGenerator } from './components/ImageGenerator';
 
-const App: FC = () => {
+function App() {
+  const [state, setState] = useState<DashboardState>(loadState());
   const [showSettings, setShowSettings] = useState(false);
+  const [showAddWidget, setShowAddWidget] = useState(false);
+  const [showImageGenerator, setShowImageGenerator] = useState(false);
+  const [editingWidget, setEditingWidget] = useState<string | null>(null);
+  const dashboardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    saveState(state);
+  }, [state]);
+
+  const handleWidgetUpdate = (widget: WidgetConfig) => {
+    setState({
+      ...state,
+      widgets: updateWidget(state.widgets, widget),
+    });
+  };
+
+  const handleMoveWidget = (id: string, direction: 'up' | 'down') => {
+    setState({
+      ...state,
+      widgets: moveWidget(state.widgets, id, direction),
+    });
+  };
+
+  const handleSizeChange = (id: string, size: WidgetSize) => {
+    const widget = state.widgets.find((w) => w.id === id);
+    if (widget) {
+      handleWidgetUpdate({ ...widget, size });
+    }
+  };
+
+  const handleToggleWidget = (id: string) => {
+    const widget = state.widgets.find((w) => w.id === id);
+    if (widget) {
+      handleWidgetUpdate({ ...widget, enabled: !widget.enabled });
+    }
+  };
+
+  const handleAddWidget = (type: string) => {
+    const widgetInfo = WIDGET_REGISTRY[type as keyof typeof WIDGET_REGISTRY];
+    setState({
+      ...state,
+      widgets: addWidget(state.widgets, type, widgetInfo?.defaultSettings || {}),
+    });
+  };
+
+  const handleDeleteWidget = (id: string) => {
+    setState({
+      ...state,
+      widgets: deleteWidget(state.widgets, id),
+    });
+  };
+
+  const handleLayoutChange = (layout: LayoutMode) => {
+    setState({ ...state, layout });
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">PaperDash</h1>
+    <div className="min-h-screen bg-white p-4 md:p-6">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="mb-6 border-4 border-black bg-white p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-3xl font-bold">{JAPANESE_LABELS.appTitle}</h1>
             <button
               onClick={() => setShowSettings(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              className="border-2 border-black px-4 py-2 font-bold hover:bg-black hover:text-white"
             >
-              設定
+              {JAPANESE_LABELS.settings}
             </button>
           </div>
+
+          <div className="flex gap-4">
+            <button
+              onClick={() => setShowAddWidget(true)}
+              className="border-2 border-black px-4 py-2 font-bold hover:bg-black hover:text-white"
+            >
+              {JAPANESE_LABELS.addWidget}
+            </button>
+
+            <button
+              onClick={() => setShowImageGenerator(true)}
+              className="bg-black text-white px-6 py-2 font-bold hover:bg-gray-800"
+            >
+              {JAPANESE_LABELS.generateImage}
+            </button>
+
+            <div className="ml-auto flex gap-2">
+              <button
+                onClick={() => handleLayoutChange('1-column')}
+                className={`border-2 border-black px-4 py-2 font-bold ${
+                  state.layout === '1-column'
+                    ? 'bg-black text-white'
+                    : 'hover:bg-gray-100'
+                }`}
+              >
+                {JAPANESE_LABELS.layoutOneColumn}
+              </button>
+              <button
+                onClick={() => handleLayoutChange('2-column')}
+                className={`border-2 border-black px-4 py-2 font-bold ${
+                  state.layout === '2-column'
+                    ? 'bg-black text-white'
+                    : 'hover:bg-gray-100'
+                }`}
+              >
+                {JAPANESE_LABELS.layoutTwoColumn}
+              </button>
+            </div>
+          </div>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Dashboard />
-      </main>
+        {/* Main content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Widget list */}
+          <div className="lg:col-span-1">
+            <WidgetList
+              widgets={state.widgets}
+              onMove={handleMoveWidget}
+              onSizeChange={handleSizeChange}
+              onToggle={handleToggleWidget}
+              onDelete={handleDeleteWidget}
+              onSettings={setEditingWidget}
+            />
+          </div>
 
-      {/* Settings Modal */}
-      {showSettings && (
-        <Settings onClose={() => setShowSettings(false)} />
-      )}
+          {/* Dashboard preview */}
+          <div className="lg:col-span-2">
+            <div className="border-4 border-black bg-white p-4">
+              <h3 className="font-bold text-lg mb-4">プレビュー</h3>
+              <div ref={dashboardRef}>
+                <Dashboard
+                  widgets={state.widgets}
+                  layout={state.layout}
+                  onWidgetUpdate={handleWidgetUpdate}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Modals */}
+        {showSettings && (
+          <Settings
+            state={state}
+            onUpdate={setState}
+            onClose={() => setShowSettings(false)}
+          />
+        )}
+
+        {showAddWidget && (
+          <AddWidget
+            onAdd={handleAddWidget}
+            onClose={() => setShowAddWidget(false)}
+          />
+        )}
+
+        {editingWidget && (
+          <WidgetSettings
+            widget={state.widgets.find((w) => w.id === editingWidget)!}
+            onUpdate={handleWidgetUpdate}
+            onClose={() => setEditingWidget(null)}
+          />
+        )}
+
+        {showImageGenerator && dashboardRef.current && (
+          <ImageGenerator
+            dashboardRef={dashboardRef as React.RefObject<HTMLDivElement>}
+            onClose={() => setShowImageGenerator(false)}
+          />
+        )}
+      </div>
     </div>
   );
-};
+}
 
 export default App;

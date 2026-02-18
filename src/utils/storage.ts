@@ -1,189 +1,106 @@
-/**
- * Secure Storage Module
- * Handles localStorage with proper namespacing and separation of sensitive data
- */
+import type { DashboardState, WidgetConfig } from '../types';
 
-const NAMESPACE = 'epaper_dashboard_';
+const STORAGE_KEY = 'paperdash_state';
 
-// Storage keys
-export const STORAGE_KEYS = {
-  // Sensitive data (only stored with explicit user consent)
-  GITHUB_TOKEN: `${NAMESPACE}github_token`,
-  SAVE_TOKEN_ENABLED: `${NAMESPACE}save_token_enabled`,
-  
-  // Non-sensitive data
-  LAYOUT: `${NAMESPACE}layout`,
-  WIDGETS: `${NAMESPACE}widgets`,
-  TODO_ITEMS: `${NAMESPACE}todo_items`,
-  SETTINGS: `${NAMESPACE}settings`,
-} as const;
-
-// In-memory storage for session-only data
-let sessionData: Record<string, string> = {};
-
-export const secureStorage = {
-  /**
-   * Get value from storage
-   * Checks session storage first for sensitive data
-   */
-  getItem(key: string): string | null {
-    // Check session storage first for sensitive data
-    if (key === STORAGE_KEYS.GITHUB_TOKEN && sessionData[key]) {
-      return sessionData[key];
-    }
-    
-    try {
-      return localStorage.getItem(key);
-    } catch (error) {
-      // Silently fail if localStorage is not available
-      return null;
-    }
+const defaultState: DashboardState = {
+  widgets: [
+    {
+      id: 'weather-default',
+      type: 'weather',
+      enabled: true,
+      size: 'M',
+      order: 0,
+      settings: { locationCode: '130000', locationName: '東京' },
+    },
+    {
+      id: 'github-default',
+      type: 'github',
+      enabled: true,
+      size: 'L',
+      order: 1,
+      settings: { username: '', token: '', range: 30 },
+    },
+    {
+      id: 'todo-default',
+      type: 'todo',
+      enabled: true,
+      size: 'M',
+      order: 2,
+      settings: { items: [] },
+    },
+  ],
+  layout: '1-column',
+  settings: {
+    defaultLocation: '130000',
+    githubUsername: '',
+    githubToken: '',
+    grassRange: 30,
   },
+};
 
-  /**
-   * Set value in storage
-   * Sensitive data goes to session storage unless explicitly allowed
-   */
-  setItem(key: string, value: string, persist: boolean = true): void {
-    if (key === STORAGE_KEYS.GITHUB_TOKEN) {
-      // Always store in session memory
-      sessionData[key] = value;
-      
-      // Only persist to localStorage if explicitly enabled
-      const shouldSave = this.getItem(STORAGE_KEYS.SAVE_TOKEN_ENABLED) === 'true';
-      if (!shouldSave || !persist) {
-        // Remove from localStorage if it was there
-        try {
-          localStorage.removeItem(key);
-        } catch {
-          // Ignore errors
-        }
-        return;
-      }
+export const loadState = (): DashboardState => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      return { ...defaultState, ...JSON.parse(saved) };
     }
-    
-    try {
-      localStorage.setItem(key, value);
-    } catch (error) {
-      // Silently fail if localStorage is not available
-    }
-  },
+  } catch (error) {
+    console.error('Failed to load state:', error);
+  }
+  return defaultState;
+};
 
-  /**
-   * Remove value from storage
-   */
-  removeItem(key: string): void {
-    // Remove from session storage
-    delete sessionData[key];
-    
-    try {
-      localStorage.removeItem(key);
-    } catch {
-      // Ignore errors
-    }
-  },
-
-  /**
-   * Clear all application data
-   */
-  clearAll(): void {
-    // Clear session data
-    sessionData = {};
-    
-    try {
-      // Remove all namespaced keys
-      const keys = Object.keys(localStorage);
-      keys.forEach(key => {
-        if (key.startsWith(NAMESPACE)) {
-          localStorage.removeItem(key);
-        }
-      });
-    } catch {
-      // Ignore errors
-    }
-  },
-
-  /**
-   * Enable/disable token persistence
-   */
-  setSaveTokenEnabled(enabled: boolean): void {
-    try {
-      localStorage.setItem(STORAGE_KEYS.SAVE_TOKEN_ENABLED, enabled.toString());
-      
-      // If disabling, remove token from localStorage immediately
-      if (!enabled) {
-        localStorage.removeItem(STORAGE_KEYS.GITHUB_TOKEN);
-      } else {
-        // If enabling and we have a token in session, save it
-        const token = sessionData[STORAGE_KEYS.GITHUB_TOKEN];
-        if (token) {
-          localStorage.setItem(STORAGE_KEYS.GITHUB_TOKEN, token);
-        }
-      }
-    } catch {
-      // Ignore errors
-    }
-  },
-
-  /**
-   * Check if token saving is enabled
-   */
-  isSaveTokenEnabled(): boolean {
-    try {
-      return localStorage.getItem(STORAGE_KEYS.SAVE_TOKEN_ENABLED) === 'true';
-    } catch {
-      return false;
-    }
+export const saveState = (state: DashboardState): void => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.error('Failed to save state:', error);
   }
 };
 
-/**
- * Redact sensitive data for logging
- */
-export function redactSensitiveData(data: unknown): unknown {
-  if (typeof data === 'string') {
-    // Never log tokens or sensitive patterns
-    if (data.startsWith('ghp_') || data.startsWith('github_pat_')) {
-      return '[REDACTED_TOKEN]';
-    }
-    return data;
-  }
-  
-  if (Array.isArray(data)) {
-    return data.map(redactSensitiveData);
-  }
-  
-  if (data && typeof data === 'object') {
-    const redacted: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(data)) {
-      // Redact token fields
-      if (key.toLowerCase().includes('token') || key.toLowerCase().includes('secret')) {
-        redacted[key] = '[REDACTED]';
-      } else {
-        redacted[key] = redactSensitiveData(value);
-      }
-    }
-    return redacted;
-  }
-  
-  return data;
-}
+export const updateWidget = (
+  widgets: WidgetConfig[],
+  updatedWidget: WidgetConfig
+): WidgetConfig[] => {
+  return widgets.map((w) => (w.id === updatedWidget.id ? updatedWidget : w));
+};
 
-/**
- * Sanitize user input to prevent injection attacks
- */
-export function sanitizeInput(input: string): string {
-  // Remove any control characters and trim whitespace
-  return input.replace(/[\u0000-\u001F\u007F-\u009F]/g, '').trim();
-}
-
-/**
- * Validate GitHub username format
- */
-export function validateGitHubUsername(username: string): boolean {
-  if (!username) return false;
+export const moveWidget = (
+  widgets: WidgetConfig[],
+  id: string,
+  direction: 'up' | 'down'
+): WidgetConfig[] => {
+  const sorted = [...widgets].sort((a, b) => a.order - b.order);
+  const index = sorted.findIndex((w) => w.id === id);
   
-  // GitHub usernames: alphanumeric and hyphens, max 39 chars, cannot start/end with hyphen
-  const usernameRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/;
-  return usernameRegex.test(username);
-}
+  if (index === -1) return widgets;
+  if (direction === 'up' && index === 0) return widgets;
+  if (direction === 'down' && index === sorted.length - 1) return widgets;
+  
+  const newIndex = direction === 'up' ? index - 1 : index + 1;
+  [sorted[index], sorted[newIndex]] = [sorted[newIndex], sorted[index]];
+  
+  return sorted.map((w, i) => ({ ...w, order: i }));
+};
+
+export const addWidget = (
+  widgets: WidgetConfig[],
+  type: string,
+  defaultSettings: Record<string, any> = {}
+): WidgetConfig[] => {
+  const newWidget: WidgetConfig = {
+    id: `${type}-${Date.now()}`,
+    type,
+    enabled: true,
+    size: 'M',
+    order: widgets.length,
+    settings: defaultSettings,
+  };
+  return [...widgets, newWidget];
+};
+
+export const deleteWidget = (widgets: WidgetConfig[], id: string): WidgetConfig[] => {
+  return widgets
+    .filter((w) => w.id !== id)
+    .map((w, i) => ({ ...w, order: i }));
+};

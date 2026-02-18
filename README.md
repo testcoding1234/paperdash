@@ -1,176 +1,109 @@
-# PaperDash 📊
+# PaperDash - 電子ペーパーダッシュボード
 
-個人利用のためのセキュアなPWAダッシュボード
+A production-ready, minimal, modular PWA dashboard generator optimized for NFC e-paper displays (Santek EZ Sign 2.9" 4-color).
 
-## 特徴
+## Overview
 
-- 🔒 **セキュリティ重視**: トークンの安全な取り扱い
-- 📱 **PWA対応**: オフライン動作とアプリライクな体験
-- ⚡ **軽量高速**: パフォーマンスと軽量設計を最優先
-- 🎌 **日本語UI**: 日本語のみのインターフェース
-- 💾 **LocalStorage**: バックエンド不要のシンプルな構成
+PaperDash is a Japanese-language minimal dashboard web application that allows users to design customizable dashboards and export 4-color e-paper optimized PNG images for manual transfer via the EZ Sign NFC official app.
 
-## 🔐 セキュリティについて
+## Features
 
-### ⚠️ 重要な注意事項
+### Modular Widget System
+- **WeatherWidget**: Japan Meteorological Agency (JMA) weather integration
+- **GithubGrassWidget**: GitHub contribution graph (7-day or 30-day view)
+- **TodoWidget**: Local storage-based task manager
 
-**このアプリケーションは個人利用を前提としています**
+Each widget is:
+- Toggleable (on/off)
+- Resizable (S / M / L)
+- Reorderable using UP/DOWN buttons
 
-- GitHub Pagesは公開されたウェブサイトです
-- URLを他人と共有しないでください
-- 個人のデバイスでのみ使用してください
-- 公共のコンピュータでは使用しないでください
+### Dashboard Editor
+- Mobile-first, minimal Japanese UX
+- Widget list panel with reordering controls
+- Size selector and settings for each widget
+- Layout toggle: 1-column (default) or 2-column mode
+- Add widget functionality
 
-### GitHub Personal Access Tokenについて
+### E-Paper Image Export
+- Canvas-based PNG generation optimized for 2.9" e-paper displays
+- 4-color palette support (black/white/red/yellow)
+- Fixed aspect ratio (296x128px)
+- High contrast rendering for e-ink readability
 
-#### トークンの作成方法（Fine-grained token推奨）
+### Settings
+- Weather location selector (Tokyo, Nagoya, Osaka, custom code)
+- GitHub username and optional Personal Access Token (stored locally)
+- Default layout preferences
+- Contribution graph range toggle (7/30 days)
 
-1. GitHubにログイン
-2. Settings → Developer settings → Personal access tokens → **Fine-grained tokens**
-3. 「Generate new token」をクリック
-4. 以下を設定:
-   - **Token name**: 任意の名前（例: PaperDash Read-only）
-   - **Expiration**: 90日または任意の期限
-   - **Repository access**: 「Public Repositories (read-only)」を選択
-   - **Permissions**: 必要最小限の読み取り権限のみ
-     - Contents: Read-only（リポジトリの内容を読む）
-     - Metadata: Read-only（基本情報を読む）
-5. 「Generate token」をクリック
-6. 表示されたトークンをコピー（このページを離れると二度と表示されません）
+## Technical Stack
 
-#### ⚠️ セキュリティ警告
+- **React 18** with TypeScript
+- **Vite** for fast builds
+- **Tailwind CSS** for minimal styling
+- **Canvas API** for image rendering
+- **PWA** support with manifest
+- **LocalStorage** for persistence (no backend required)
 
-- **絶対に書き込み権限のあるトークンは使用しないでください**
-- **読み取り専用（Read-only）のトークンのみ使用してください**
-- トークンは個人の秘密情報です。他人と共有しないでください
-- 不要になったトークンはGitHubの設定から削除してください
+## Setup
 
-### トークンの保存について
+### Prerequisites
+- Node.js 18+ and npm
 
-このアプリでは2つの保存オプションがあります：
-
-1. **セッションのみ（デフォルト、推奨）**
-   - 「トークンを端末に保存する」チェックボックスをOFF
-   - ブラウザを閉じるとトークンは消去されます
-   - 最も安全な方法です
-
-2. **端末に保存**
-   - 「トークンを端末に保存する」チェックボックスをON
-   - ブラウザのLocalStorageに保存されます
-   - 次回訪問時もトークンが保持されます
-   - 便利ですが、デバイスのセキュリティに依存します
-
-### データの削除方法
-
-保存されたトークンや設定を完全に削除するには：
-
-1. 設定画面を開く
-2. 画面下部の「全データ削除」ボタンをクリック
-3. 確認のためもう一度クリック
-4. すべてのデータが削除されます
-
-または、ブラウザの開発者ツール（F12）から：
-```javascript
-// すべてのアプリデータを削除
-Object.keys(localStorage).forEach(key => {
-  if (key.startsWith('epaper_dashboard_')) {
-    localStorage.removeItem(key);
-  }
-});
-```
-
-### セキュリティ機能
-
-このアプリケーションには以下のセキュリティ機能が実装されています：
-
-- ✅ トークンの自動保存禁止（明示的な同意が必要）
-- ✅ トークン入力フィールドのマスク（パスワード形式）
-- ✅ トークンの表示/非表示切り替え
-- ✅ コンソールログへのトークン出力禁止
-- ✅ エラーメッセージへのトークン含有禁止
-- ✅ 名前空間付きLocalStorageキー（`epaper_dashboard_*`）
-- ✅ 機密データと非機密データの分離
-- ✅ PWAキャッシュのバージョン管理
-- ✅ サービスワーカーの自動更新
-- ✅ APIレスポンスのキャッシュ制限
-
-## 🚀 セットアップ
-
-### 必要要件
-
-- Node.js 18.x 以降
-- npm または yarn
-
-### インストール
+### Installation
 
 ```bash
-# リポジトリをクローン
-git clone https://github.com/testcoding1234/paperdash.git
-cd paperdash
-
-# 依存関係をインストール
+# Install dependencies
 npm install
 
-# 開発サーバーを起動
+# Run development server
 npm run dev
-```
 
-### ビルド
-
-```bash
-# プロダクションビルド
+# Build for production
 npm run build
 
-# ビルド結果をプレビュー
+# Preview production build
 npm run preview
 ```
 
-### GitHub Pagesへのデプロイ
+## Usage
 
-```bash
-# ビルド
-npm run build
+1. **Add Widgets**: Click "ウィジェット追加" to add weather, GitHub, or todo widgets
+2. **Configure**: Use the settings button on each widget to configure location, username, etc.
+3. **Arrange**: Use ↑↓ buttons to reorder widgets and S/M/L to resize
+4. **Generate Image**: Click "更新して画像生成" to create an e-paper optimized PNG
+5. **Download**: Save the generated image
+6. **Transfer**: Manually upload the PNG to your EZ Sign device using the official NFC app
 
-# distフォルダをgh-pagesブランチにデプロイ
-# （GitHub Actionsまたは手動でデプロイ）
+## Project Structure
+
+```
+src/
+├── components/       # React components (Dashboard, Settings, etc.)
+├── widgets/          # Widget implementations
+├── utils/            # Utilities (storage, API, rendering)
+├── types/            # TypeScript types
+├── constants/        # Constants and labels (Japanese)
+└── App.tsx          # Main application
 ```
 
-## 📖 使い方
+## Design Philosophy
 
-1. アプリケーションを開く
-2. 「設定」ボタンをクリック
-3. GitHubユーザー名を入力
-4. （オプション）GitHub Personal Access Tokenを入力
-5. （オプション）「トークンを端末に保存する」を選択
-6. 「保存」をクリック
-7. ダッシュボードにGitHubコントリビューショングラフが表示されます
+- **Minimal**: Muji-like aesthetic, calm and professional
+- **E-paper friendly**: High contrast, no gradients
+- **Performance**: Lightweight, fast initial load (<2s)
+- **Mobile-first**: Optimized for Android Chrome
+- **Offline-capable**: PWA with service worker support
 
-## 🔧 技術スタック
+## Color Palette
 
-- **React 19** - UIライブラリ
-- **TypeScript** - 型安全性
-- **Vite** - 高速ビルドツール
-- **Tailwind CSS** - スタイリング
-- **vite-plugin-pwa** - PWA機能
-- **Workbox** - サービスワーカー管理
+Limited to e-paper safe colors:
+- Black (#000000)
+- White (#FFFFFF)
+- Red (#FF0000)
+- Yellow (#FFFF00)
 
-## 📝 ライセンス
+## License
 
-MIT License
-
-## ⚠️ 免責事項
-
-このアプリケーションは個人利用を目的としています。以下の点にご注意ください：
-
-- このアプリの使用は自己責任で行ってください
-- トークンの管理は各自で適切に行ってください
-- セキュリティインシデントについて作者は責任を負いません
-- 本番環境や重要なデータには使用しないでください
-
-## 🤝 コントリビューション
-
-プルリクエストは歓迎します。大きな変更の場合は、まずissueを開いて変更内容を議論してください。
-
-## 📞 サポート
-
-問題が発生した場合は、GitHubのIssueを開いてください。
+MIT
