@@ -99,6 +99,8 @@ export const loadState = (): DashboardState => {
       }
       
       // Validate that cleaned is an object before merging
+      // This guard protects against corrupted localStorage data or edge cases
+      // where removeSensitiveKeys might return a non-object type
       const cleanedState = cleaned && typeof cleaned === 'object' && !Array.isArray(cleaned)
         ? cleaned
         : {};
