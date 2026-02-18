@@ -5,29 +5,23 @@ export interface WeatherData {
 }
 
 // Map weather conditions to emojis
+const WEATHER_EMOJI_MAP: Array<{ keywords: string[]; emoji: string }> = [
+  { keywords: ['晴', 'sunny', 'clear'], emoji: '☀️' },
+  { keywords: ['曇', 'cloud'], emoji: '☁️' },
+  { keywords: ['雨', 'rain'], emoji: '🌧️' },
+  { keywords: ['雪', 'snow'], emoji: '❄️' },
+  { keywords: ['雷', 'thunder'], emoji: '⚡' },
+  { keywords: ['霧', 'fog', 'mist'], emoji: '🌫️' },
+  { keywords: ['風', 'wind'], emoji: '💨' },
+];
+
 export const getWeatherEmoji = (condition: string): string => {
   const conditionLower = condition.toLowerCase();
   
-  if (conditionLower.includes('晴') || conditionLower.includes('sunny') || conditionLower.includes('clear')) {
-    return '☀️';
-  }
-  if (conditionLower.includes('曇') || conditionLower.includes('cloud')) {
-    return '☁️';
-  }
-  if (conditionLower.includes('雨') || conditionLower.includes('rain')) {
-    return '🌧️';
-  }
-  if (conditionLower.includes('雪') || conditionLower.includes('snow')) {
-    return '❄️';
-  }
-  if (conditionLower.includes('雷') || conditionLower.includes('thunder')) {
-    return '⚡';
-  }
-  if (conditionLower.includes('霧') || conditionLower.includes('fog') || conditionLower.includes('mist')) {
-    return '🌫️';
-  }
-  if (conditionLower.includes('風') || conditionLower.includes('wind')) {
-    return '💨';
+  for (const { keywords, emoji } of WEATHER_EMOJI_MAP) {
+    if (keywords.some((keyword) => conditionLower.includes(keyword))) {
+      return emoji;
+    }
   }
   
   // Default emoji for unknown conditions
