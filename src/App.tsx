@@ -177,11 +177,9 @@ function App() {
           />
         )}
 
-        {showImageGenerator && dashboardRef.current && (
+        {showImageGenerator && (
           <ImageGenerator
-            dashboardRef={dashboardRef as React.RefObject<HTMLDivElement>}
             widgets={state.widgets}
-            layout={state.layout}
             onClose={() => setShowImageGenerator(false)}
           />
         )}

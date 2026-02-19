@@ -2,12 +2,10 @@ import { useRef, useEffect, useState } from 'react';
 import type { WidgetConfig } from '../types';
 import { JAPANESE_LABELS, CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants';
 import { downloadCanvas } from '../utils/renderer';
-import { renderWidgetToCanvas } from '../utils/widgetRenderer';
+import { renderWidgetToCanvas, estimateWidgetHeight } from '../utils/widgetRenderer';
 
 interface ImageGeneratorProps {
-  dashboardRef: React.RefObject<HTMLDivElement>;
   widgets: WidgetConfig[];
-  layout: '1-column' | '2-column';
   onClose: () => void;
 }
 
@@ -44,11 +42,7 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
 
       // Calculate total content height to center vertically
       const widgetSpacing = 6;
-      const widgetHeights = enabledWidgets.map(w => {
-        // Estimate height based on widget type and size
-        const baseHeight = w.size === 'S' ? 30 : w.size === 'L' ? 60 : 45;
-        return baseHeight;
-      });
+      const widgetHeights = enabledWidgets.map(w => estimateWidgetHeight(w));
       
       const totalContentHeight = widgetHeights.reduce((sum, h) => sum + h, 0) 
         + (widgetHeights.length - 1) * widgetSpacing;

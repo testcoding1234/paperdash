@@ -1,8 +1,62 @@
 import type { WidgetConfig, WeatherSettings, GithubSettings, TodoSettings } from '../types';
 
 /**
+ * Estimate the height needed to render a widget
+ * This should match the actual rendering logic in renderWidgetToCanvas
+ */
+export const estimateWidgetHeight = (widget: WidgetConfig): number => {
+  // Base padding
+  const padding = widget.size === 'S' ? 4 : widget.size === 'L' ? 12 : 8;
+  
+  // Widget-specific height estimation
+  switch (widget.type) {
+    case 'weather':
+      return estimateWeatherHeight(widget, padding);
+    case 'github':
+      return estimateGithubHeight(widget, padding);
+    case 'todo':
+      return estimateTodoHeight(widget, padding);
+    default:
+      // Default fallback
+      return widget.size === 'S' ? 30 : widget.size === 'L' ? 60 : 45;
+  }
+};
+
+const estimateWeatherHeight = (widget: WidgetConfig, padding: number): number => {
+  const fontSize = widget.size === 'S' ? 10 : widget.size === 'L' ? 16 : 12;
+  // Title + location line + padding
+  return padding * 2 + fontSize * 2 + 8;
+};
+
+const estimateGithubHeight = (widget: WidgetConfig, padding: number): number => {
+  const fontSize = widget.size === 'S' ? 9 : widget.size === 'L' ? 14 : 11;
+  const cellSize = widget.size === 'S' ? 3 : widget.size === 'L' ? 6 : 4;
+  const cellGap = 1;
+  // Title + range text + grass grid (7 rows)
+  return padding * 2 + fontSize * 2 + 8 + (cellSize + cellGap) * 7;
+};
+
+const estimateTodoHeight = (widget: WidgetConfig, padding: number): number => {
+  const settings = widget.settings as TodoSettings;
+  const fontSize = widget.size === 'S' ? 9 : widget.size === 'L' ? 14 : 11;
+  const lineHeight = fontSize + 4;
+  const itemCount = Math.min(settings.items?.length || 0, 5); // Cap at 5 visible items
+  // Title + items
+  return padding * 2 + fontSize + 6 + (itemCount * lineHeight);
+};
+
+/**
  * Render a widget to canvas using its data model, not DOM textContent
  * This ensures proper rendering of visual markers (GitHub grass) and excludes UI controls
+ * 
+ * Note: This renderer uses static widget configuration data only.
+ * Dynamic data (weather conditions, GitHub contributions) fetched at runtime
+ * is not passed to this function and will show placeholder values.
+ * 
+ * For production use with live data, consider:
+ * 1. Passing fetched data as an additional parameter
+ * 2. Storing fetched data in widget config before image generation
+ * 3. Using a separate data cache mechanism
  */
 export const renderWidgetToCanvas = (
   ctx: CanvasRenderingContext2D,
@@ -60,8 +114,9 @@ const renderWeatherWidget = (
   ctx.font = `bold ${fontSize}px sans-serif`;
   ctx.fillText('天気', x, y);
   
-  // Note: Weather data is fetched async and not available in widget config
-  // For e-paper, we show static placeholder or cached data
+  // Note: This renders placeholder data from widget config only.
+  // Live weather data fetched at runtime is not available here.
+  // To show current conditions, pass weather data as an additional parameter.
   ctx.font = `${fontSize}px sans-serif`;
   const locationName = settings.locationName || '設定中';
   ctx.fillText(`地域: ${locationName}`, x, y + fontSize + 4);
@@ -83,15 +138,15 @@ const renderGithubWidget = (
   const title = `GitHub - ${settings.username || '未設定'}`;
   ctx.fillText(title, x, y);
   
-  // Note: Contribution data is fetched async and not available in widget config
-  // For e-paper rendering, we show a placeholder or render cached data if passed
+  // Note: This renders placeholder grass visualization only.
+  // Live contribution data fetched at runtime is not available here.
+  // To show actual contributions, pass GitHub data as an additional parameter.
   ctx.font = `${fontSize - 2}px sans-serif`;
   const rangeText = `${settings.range || 30}日間`;
   ctx.fillText(rangeText, x, y + fontSize + 3);
   
-  // Render grass visualization (horizontal blocks)
-  // For demo purposes, render placeholder blocks
-  // In production, would need to pass actual contribution data
+  // Render grass visualization (horizontal blocks) - PLACEHOLDER ONLY
+  // All cells shown as empty (level 0) until contribution data is provided
   const grassY = y + fontSize * 2 + 8;
   const cellSize = widget.size === 'S' ? 3 : widget.size === 'L' ? 6 : 4;
   const cellGap = 1;
@@ -108,8 +163,8 @@ const renderGithubWidget = (
       const cellX = x + week * (cellSize + cellGap);
       const cellY = grassY + day * (cellSize + cellGap);
       
-      // Mock contribution level (0-4) - in production would use actual data
-      const level = 0; // Default to empty for now
+      // Mock contribution level (0-4) - ALWAYS 0 until live data is passed
+      const level = 0;
       
       const color = getGrassColor(level);
       ctx.fillStyle = color;
