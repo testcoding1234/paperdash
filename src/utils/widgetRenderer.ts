@@ -229,9 +229,10 @@ const renderTodoWidget = (
   }
   
   // Render todo items (display only, no input controls)
-  settings.items.forEach((item) => {
-    if (currentY > y + 100) return; // Prevent overflow
-    
+  // Cap at 5 items to match estimateTodoHeight
+  const itemsToRender = settings.items.slice(0, 5);
+  
+  itemsToRender.forEach((item) => {
     // Render checkbox
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 1;
