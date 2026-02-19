@@ -20,20 +20,9 @@ export const WeatherWidget: React.FC<WidgetProps> = ({ config }) => {
     loadWeather();
   }, [settings.locationCode]);
 
-  const getSizeClasses = () => {
-    switch (config.size) {
-      case 'S':
-        return 'p-2 text-sm';
-      case 'L':
-        return 'p-6 text-xl';
-      default:
-        return 'p-4 text-base';
-    }
-  };
-
   if (loading) {
     return (
-      <div className={`border-2 border-black bg-white ${getSizeClasses()}`}>
+      <div className="border-2 border-black bg-white p-4 text-base">
         <div className="font-bold mb-1">天気</div>
         <div className="text-sm">読み込み中...</div>
       </div>
@@ -41,7 +30,7 @@ export const WeatherWidget: React.FC<WidgetProps> = ({ config }) => {
   }
 
   return (
-    <div className={`border-2 border-black bg-white ${getSizeClasses()}`}>
+    <div className="border-2 border-black bg-white p-4 text-base">
       <div className="font-bold mb-1">天気 - {weather?.locationName}</div>
       <div className="flex items-center gap-2">
         <span className="text-3xl">{getWeatherEmoji(weather?.condition || '')}</span>

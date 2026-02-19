@@ -3,19 +3,8 @@ import type { WidgetProps, TodoSettings } from '../types';
 export const TodoWidget: React.FC<WidgetProps> = ({ config }) => {
   const settings = (config.settings as TodoSettings) || { items: [] };
 
-  const getSizeClasses = () => {
-    switch (config.size) {
-      case 'S':
-        return 'p-2 text-sm';
-      case 'L':
-        return 'p-6 text-lg';
-      default:
-        return 'p-4 text-base';
-    }
-  };
-
   return (
-    <div className={`border-2 border-black bg-white ${getSizeClasses()}`}>
+    <div className="border-2 border-black bg-white p-4 text-base">
       <div className="font-bold mb-2">To-Do</div>
       
       <div className="space-y-1">

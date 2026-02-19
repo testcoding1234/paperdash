@@ -16,15 +16,6 @@ export const JAPANESE_LABELS = {
   github: 'GitHub',
   todo: 'To-Do',
   
-  // Size labels
-  sizeSmall: '小',
-  sizeMedium: '中',
-  sizeLarge: '大',
-  
-  // Layout
-  layoutOneColumn: '1列',
-  layoutTwoColumn: '2列',
-  
   // Settings
   settingsTitle: '設定',
   weatherLocation: '天気の地域',

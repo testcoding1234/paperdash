@@ -44,8 +44,18 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
       const widgetSpacing = 6;
       const widgetHeights = enabledWidgets.map(w => estimateWidgetHeight(w));
       
-      const totalContentHeight = widgetHeights.reduce((sum, h) => sum + h, 0) 
+      let totalContentHeight = widgetHeights.reduce((sum, h) => sum + h, 0) 
         + (widgetHeights.length - 1) * widgetSpacing;
+      
+      // CRITICAL: Prevent canvas overflow
+      // If content exceeds available height, reduce spacing dynamically
+      const maxContentHeight = CANVAS_HEIGHT - 16; // Leave 8px margin top and bottom
+      if (totalContentHeight > maxContentHeight) {
+        // Try reducing spacing first
+        const minSpacing = 2;
+        const reducedSpacing = Math.max(minSpacing, Math.floor((maxContentHeight - widgetHeights.reduce((sum, h) => sum + h, 0)) / (widgetHeights.length - 1)));
+        totalContentHeight = widgetHeights.reduce((sum, h) => sum + h, 0) + (widgetHeights.length - 1) * reducedSpacing;
+      }
       
       // Center vertically in 296x128 canvas with minimum 8px margin
       let yOffset = Math.max(8, (CANVAS_HEIGHT - totalContentHeight) / 2);
@@ -53,8 +63,11 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
       // Render each widget using dedicated renderer
       enabledWidgets.forEach((widget, index) => {
         const height = widgetHeights[index];
-        renderWidgetToCanvas(ctx, widget, 10, yOffset, CANVAS_WIDTH - 20, height);
-        yOffset += height + widgetSpacing;
+        // Only render if there's room (prevent overflow)
+        if (yOffset + height <= CANVAS_HEIGHT - 8) {
+          renderWidgetToCanvas(ctx, widget, 10, yOffset, CANVAS_WIDTH - 20, height);
+          yOffset += height + (totalContentHeight > maxContentHeight ? 2 : widgetSpacing);
+        }
       });
     } catch (error) {
       console.error('Image generation error:', error);

@@ -1,16 +1,14 @@
-import type { WidgetConfig, LayoutMode } from '../types';
+import type { WidgetConfig } from '../types';
 import { WIDGET_REGISTRY } from '../widgets';
 
 interface DashboardProps {
   widgets: WidgetConfig[];
-  layout: LayoutMode;
   onWidgetUpdate: (widget: WidgetConfig) => void;
   previewMode?: boolean;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
   widgets,
-  layout: _layout, // Kept for backward compatibility, but unused (always single column)
   onWidgetUpdate,
   previewMode = false,
 }) => {

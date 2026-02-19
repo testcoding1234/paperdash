@@ -1,11 +1,10 @@
-import type { WidgetConfig, WidgetSize } from '../types';
+import type { WidgetConfig } from '../types';
 import { WIDGET_REGISTRY } from '../widgets';
 import { JAPANESE_LABELS } from '../constants';
 
 interface WidgetListProps {
   widgets: WidgetConfig[];
   onMove: (id: string, direction: 'up' | 'down') => void;
-  onSizeChange: (id: string, size: WidgetSize) => void;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
   onSettings: (id: string) => void;
@@ -14,7 +13,6 @@ interface WidgetListProps {
 export const WidgetList: React.FC<WidgetListProps> = ({
   widgets,
   onMove,
-  onSizeChange,
   onToggle,
   onDelete,
   onSettings,
@@ -70,22 +68,6 @@ export const WidgetList: React.FC<WidgetListProps> = ({
               </div>
 
               <div className="flex items-center gap-2">
-                <div className="flex gap-1">
-                  {(['S', 'M', 'L'] as WidgetSize[]).map((size) => (
-                    <button
-                      key={size}
-                      onClick={() => onSizeChange(widget.id, size)}
-                      className={`border border-black px-3 py-1 text-xs ${
-                        widget.size === size
-                          ? 'bg-black text-white'
-                          : 'hover:bg-gray-100'
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-
                 <button
                   onClick={() => onSettings(widget.id)}
                   className="ml-auto border border-black px-3 py-1 text-xs hover:bg-black hover:text-white"
