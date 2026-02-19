@@ -13,7 +13,7 @@ export const TodoEditor: React.FC<TodoEditorProps> = ({ settings, onUpdate }) =>
     if (!newTodo.trim()) return;
 
     const newItem: TodoItem = {
-      id: `todo-${Date.now()}`,
+      id: `todo-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
       text: newTodo,
       completed: false,
     };
@@ -63,7 +63,7 @@ export const TodoEditor: React.FC<TodoEditorProps> = ({ settings, onUpdate }) =>
         </div>
 
         {/* Todoリスト */}
-        <div className="space-y-2 border-2 border-black p-3 bg-gray-50 max-h-96 overflow-y-auto">
+        <div className="space-y-2 border-2 border-black p-3 bg-gray-50 max-h-96 overflow-y-auto" role="list">
           {settings.items.length === 0 ? (
             <div className="text-sm text-gray-500 text-center py-4">
               タスクがありません
@@ -72,6 +72,7 @@ export const TodoEditor: React.FC<TodoEditorProps> = ({ settings, onUpdate }) =>
             settings.items.map((item) => (
               <div
                 key={item.id}
+                role="listitem"
                 className="flex items-center gap-3 bg-white p-2 border border-gray-300"
               >
                 <input

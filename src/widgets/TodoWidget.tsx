@@ -25,7 +25,9 @@ export const TodoWidget: React.FC<WidgetProps> = ({ config }) => {
               type="checkbox"
               checked={item.completed}
               readOnly
-              className="w-4 h-4"
+              aria-disabled="true"
+              aria-label={`${item.text} (表示専用)`}
+              className="w-4 h-4 cursor-default"
             />
             <span className={item.completed ? 'line-through opacity-50' : ''}>
               {item.text}
