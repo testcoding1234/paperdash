@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import type { DashboardState, WidgetConfig, LayoutMode, WidgetSize } from './types';
+import type { DashboardState, WidgetConfig, WidgetSize } from './types';
 import { loadState, saveState, updateWidget, moveWidget, addWidget, deleteWidget } from './utils/storage';
 import { WIDGET_REGISTRY } from './widgets';
 import { JAPANESE_LABELS } from './constants';
@@ -65,10 +65,6 @@ function App() {
     });
   };
 
-  const handleLayoutChange = (layout: LayoutMode) => {
-    setState({ ...state, layout });
-  };
-
   return (
     <div className="min-h-screen bg-white flex justify-center p-4">
       <div className="w-full max-w-lg mx-auto">
@@ -98,29 +94,6 @@ function App() {
             >
               {JAPANESE_LABELS.generateImage}
             </button>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleLayoutChange('1-column')}
-                className={`flex-1 border-2 border-black px-4 py-2 font-bold ${
-                  state.layout === '1-column'
-                    ? 'bg-black text-white'
-                    : 'hover:bg-gray-100'
-                }`}
-              >
-                {JAPANESE_LABELS.layoutOneColumn}
-              </button>
-              <button
-                onClick={() => handleLayoutChange('2-column')}
-                className={`flex-1 border-2 border-black px-4 py-2 font-bold ${
-                  state.layout === '2-column'
-                    ? 'bg-black text-white'
-                    : 'hover:bg-gray-100'
-                }`}
-              >
-                {JAPANESE_LABELS.layoutTwoColumn}
-              </button>
-            </div>
           </div>
         </div>
 

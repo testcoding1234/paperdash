@@ -47,8 +47,8 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
       const totalContentHeight = widgetHeights.reduce((sum, h) => sum + h, 0) 
         + (widgetHeights.length - 1) * widgetSpacing;
       
-      // Center vertically in 296x128 canvas
-      let yOffset = Math.max(10, (CANVAS_HEIGHT - totalContentHeight) / 2);
+      // Center vertically in 296x128 canvas with minimum 8px margin
+      let yOffset = Math.max(8, (CANVAS_HEIGHT - totalContentHeight) / 2);
 
       // Render each widget using dedicated renderer
       enabledWidgets.forEach((widget, index) => {
