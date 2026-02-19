@@ -1,4 +1,5 @@
 import type { WidgetConfig, WeatherSettings, GithubSettings, TodoSettings } from '../types';
+import { CANVAS_WIDTH } from '../constants';
 
 /**
  * Estimate the height needed to render a widget
@@ -35,8 +36,9 @@ const estimateGithubHeight = (widget: WidgetConfig, padding: number): number => 
   const cellGap = 1;
   
   // Calculate how many cells fit per row based on available width
-  // Using conservative estimate: canvas width (296) - margins (20) - padding (2 * padding)
-  const availableWidth = 296 - 20 - (padding * 2);
+  // Canvas dimensions: CANVAS_WIDTH - horizontal margins - widget padding
+  const CANVAS_HORIZONTAL_MARGINS = 20;
+  const availableWidth = CANVAS_WIDTH - CANVAS_HORIZONTAL_MARGINS - (padding * 2);
   const maxCellsPerRow = Math.floor(availableWidth / (cellSize + cellGap));
   const daysToShow = settings.range || 30;
   const numberOfRows = Math.ceil(daysToShow / maxCellsPerRow);
