@@ -1,7 +1,7 @@
 import type { WidgetConfig, WeatherSettings, GithubSettings, TodoSettings } from '../types';
 import { CANVAS_WIDTH } from '../constants/index';
 import type { WeatherData } from './weather';
-import { getWeatherEmoji } from './weather';
+import { getWeatherEmoji, TEMP_VARIANCE } from './weather';
 import type { GithubData } from './github';
 
 // Fixed padding for all widgets (no size variants)
@@ -70,8 +70,8 @@ const estimateGithubHeight = (widget: WidgetConfig, fontScale: number = 1): numb
 const estimateTodoHeight = (fontScale: number = 1): number => {
   const { fontSize, titleFontSize } = getScaledFonts(fontScale);
   const lineHeight = fontSize + 4;
-  // Title + single line containing all tasks joined with full-width spaces
-  return WIDGET_PADDING * 2 + titleFontSize + 6 + lineHeight;
+  // Title + up to 2 lines containing tasks joined with full-width spaces
+  return WIDGET_PADDING * 2 + titleFontSize + 6 + lineHeight * 2;
 };
 
 /**
@@ -141,9 +141,9 @@ const renderWeatherWidget = (
   const weatherData = liveData?.weather?.[weatherKey];
   const locationName = weatherData?.locationName || settings.locationName || '設定中';
 
-  // Line 1: Title + location combined into one line
+  // Line 1: Title + location combined into one line with full-width space
   ctx.font = `bold ${titleFontSize}px sans-serif`;
-  ctx.fillText(`天気 ${locationName}`, x, y);
+  ctx.fillText(`天気\u3000${locationName}`, x, y);
   
   if (weatherData) {
     // Line 2: Emoji and temperatures on the same row
@@ -153,11 +153,11 @@ const renderWeatherWidget = (
     
     // Temperature display with max/min
     // Note: JMA API returns single temperature value
-    // Derive min/max using ±2°C approximation for e-paper display
+    // Derive min/max using ±TEMP_VARIANCE°C approximation for e-paper display
     // This provides useful range estimate without additional API calls
     const temp = weatherData.temperature;
-    const maxTemp = temp + 2;
-    const minTemp = temp - 2;
+    const maxTemp = temp + TEMP_VARIANCE;
+    const minTemp = temp - TEMP_VARIANCE;
     
     ctx.font = `${fontSize}px sans-serif`;
     const tempText = `最高: ${maxTemp}°C / 最低: ${minTemp}°C`;
@@ -271,18 +271,35 @@ const renderTodoWidget = (
   // Build single-line text: all tasks joined with full-width spaces
   // Use ☐ for unchecked, ☑ for checked
   const parts = settings.items.map(item => `${item.completed ? '☑' : '☐'}${item.text}`);
-  let lineText = parts.join('　');
+  const fullText = parts.join('\u3000');
   
   ctx.font = `${fontSize}px sans-serif`;
-  
-  // Truncate if the combined text is too wide for the widget
-  if (ctx.measureText(lineText).width > width) {
-    while (lineText.length > 0 && ctx.measureText(lineText + '…').width > width) {
-      lineText = lineText.slice(0, -1);
-    }
-    lineText += '…';
-  }
+  const lineHeight = fontSize + 4;
   
   ctx.fillStyle = '#000000';
-  ctx.fillText(lineText, x, contentY);
+  
+  // If the combined text fits on one line, display it directly
+  if (ctx.measureText(fullText).width <= width) {
+    ctx.fillText(fullText, x, contentY);
+  } else {
+    // Wrap at full-width space boundaries between tasks (max 2 lines)
+    const lines: string[] = [];
+    let currentLine = '';
+    
+    for (const part of parts) {
+      const candidate = currentLine ? currentLine + '\u3000' + part : part;
+      if (ctx.measureText(candidate).width > width && currentLine) {
+        lines.push(currentLine);
+        currentLine = part;
+      } else {
+        currentLine = candidate;
+      }
+    }
+    if (currentLine) lines.push(currentLine);
+    
+    // Render up to 2 lines
+    lines.slice(0, 2).forEach((line, index) => {
+      ctx.fillText(line, x, contentY + index * lineHeight);
+    });
+  }
 };
