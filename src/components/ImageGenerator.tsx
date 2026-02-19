@@ -1,13 +1,16 @@
 import { useRef, useEffect, useState } from 'react';
 import { JAPANESE_LABELS, CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants';
-import { downloadCanvas } from '../utils/renderer';
+import { downloadCanvas, renderDashboardToCanvas } from '../utils/renderer';
+import type { WidgetConfig, GithubSettings, WeatherSettings } from '../types';
+import { fetchGithubContributions } from '../utils/github';
+import { fetchWeather, getWeatherEmoji } from '../utils/weather';
 
 interface ImageGeneratorProps {
-  dashboardRef: React.RefObject<HTMLDivElement>;
+  widgets: WidgetConfig[];
   onClose: () => void;
 }
 
-export const ImageGenerator: React.FC<ImageGeneratorProps> = ({ dashboardRef, onClose }) => {
+export const ImageGenerator: React.FC<ImageGeneratorProps> = ({ widgets, onClose }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [generating, setGenerating] = useState(false);
 
@@ -17,45 +20,45 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({ dashboardRef, on
   }, []);
 
   const generateImage = async () => {
-    if (!canvasRef.current || !dashboardRef.current) return;
+    if (!canvasRef.current) return;
 
     setGenerating(true);
 
     try {
       const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      // Clear with white background
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-      // Set up rendering
-      ctx.fillStyle = '#000000';
-      ctx.font = 'bold 14px sans-serif';
-
-      // Simple text-based rendering
-      const widgets = dashboardRef.current.querySelectorAll('[data-widget]');
-      let yOffset = 10;
-
-      widgets.forEach((widget) => {
-        const text = widget.textContent || '';
-        const lines = text.split('\n').filter(l => l.trim());
-        
-        lines.forEach((line, index) => {
-          if (yOffset < CANVAS_HEIGHT - 20) {
-            if (index === 0) {
-              ctx.font = 'bold 14px sans-serif';
-            } else {
-              ctx.font = '12px sans-serif';
+      
+      // Collect data for all enabled widgets
+      const widgetData = new Map<string, any>();
+      const enabledWidgets = widgets.filter(w => w.enabled);
+      
+      // Fetch data for each widget type
+      await Promise.all(
+        enabledWidgets.map(async (widget) => {
+          try {
+            if (widget.type === 'github') {
+              const settings = widget.settings as GithubSettings;
+              if (settings.username) {
+                const data = await fetchGithubContributions(
+                  settings.username,
+                  settings.range || 30
+                );
+                widgetData.set(widget.id, data);
+              }
+            } else if (widget.type === 'weather') {
+              const settings = widget.settings as WeatherSettings;
+              const data = await fetchWeather(settings.locationCode || '130000');
+              const emoji = getWeatherEmoji(data.condition);
+              widgetData.set(widget.id, { ...data, emoji });
             }
-            ctx.fillText(line.trim().substring(0, 50), 10, yOffset);
-            yOffset += 16;
+            // Todo widget doesn't need external data - it's already in settings
+          } catch (error) {
+            console.error(`Error fetching data for widget ${widget.id}:`, error);
           }
-        });
-        
-        yOffset += 10;
-      });
+        })
+      );
+
+      // Render to canvas using structured renderer
+      renderDashboardToCanvas(canvas, enabledWidgets, widgetData);
     } catch (error) {
       console.error('Image generation error:', error);
     } finally {

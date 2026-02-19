@@ -31,6 +31,12 @@ export interface TodoItem {
   completed: boolean;
 }
 
+export interface ContributionDay {
+  date: string;
+  count: number;
+  level: number;
+}
+
 export interface DashboardState {
   widgets: WidgetConfig[];
   layout: LayoutMode;
@@ -45,4 +51,5 @@ export interface WidgetProps {
   config: WidgetConfig;
   onUpdate: (config: WidgetConfig) => void;
   previewMode?: boolean;
+  renderMode?: 'preview' | 'export';
 }
