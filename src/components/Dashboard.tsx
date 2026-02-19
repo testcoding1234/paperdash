@@ -18,13 +18,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
     .filter((w) => w.enabled)
     .sort((a, b) => a.order - b.order);
 
-  // Flexible dashboard layout with proper gap
-  const gridClass = layout === '2-column' 
-    ? 'grid grid-cols-1 md:grid-cols-2 gap-4' 
-    : 'flex flex-col gap-4';
+  // E-paper optimized: fixed layout without responsive breakpoints
+  const layoutClass = layout === '2-column' 
+    ? 'grid grid-cols-2 gap-3' 
+    : 'flex flex-col gap-3';
 
   return (
-    <div className={gridClass}>
+    <div className={layoutClass}>
       {sorted.map((widget) => {
         const widgetInfo = WIDGET_REGISTRY[widget.type as keyof typeof WIDGET_REGISTRY];
         if (!widgetInfo) return null;
@@ -35,7 +35,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div
             key={widget.id}
             data-widget={widget.type}
-            className={layout === '2-column' && widget.size === 'L' ? 'md:col-span-2' : ''}
+            className={layout === '2-column' && widget.size === 'L' ? 'col-span-2' : ''}
           >
             <WidgetComponent
               config={widget}

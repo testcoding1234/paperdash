@@ -70,11 +70,11 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-white p-4 md:p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-white flex justify-center p-4">
+      <div className="w-full max-w-lg mx-auto">
         {/* Header */}
         <div className="mb-4 border-4 border-black bg-white p-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+          <div className="flex items-center justify-between gap-4 mb-4">
             <h1 className="text-3xl font-bold">{JAPANESE_LABELS.appTitle}</h1>
             <button
               onClick={() => setShowSettings(true)}
@@ -84,7 +84,7 @@ function App() {
             </button>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col gap-2">
             <button
               onClick={() => setShowAddWidget(true)}
               className="border-2 border-black px-4 py-2 font-bold hover:bg-black hover:text-white"
@@ -94,15 +94,15 @@ function App() {
 
             <button
               onClick={() => setShowImageGenerator(true)}
-              className="bg-black text-white px-6 py-2 font-bold hover:bg-gray-800"
+              className="bg-black text-white px-4 py-2 font-bold hover:bg-gray-800"
             >
               {JAPANESE_LABELS.generateImage}
             </button>
 
-            <div className="sm:ml-auto flex gap-2">
+            <div className="flex gap-2">
               <button
                 onClick={() => handleLayoutChange('1-column')}
-                className={`border-2 border-black px-4 py-2 font-bold ${
+                className={`flex-1 border-2 border-black px-4 py-2 font-bold ${
                   state.layout === '1-column'
                     ? 'bg-black text-white'
                     : 'hover:bg-gray-100'
@@ -112,7 +112,7 @@ function App() {
               </button>
               <button
                 onClick={() => handleLayoutChange('2-column')}
-                className={`border-2 border-black px-4 py-2 font-bold ${
+                className={`flex-1 border-2 border-black px-4 py-2 font-bold ${
                   state.layout === '2-column'
                     ? 'bg-black text-white'
                     : 'hover:bg-gray-100'
@@ -125,9 +125,9 @@ function App() {
         </div>
 
         {/* Main content */}
-        <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex flex-col gap-4">
           {/* Widget list */}
-          <div className="lg:w-1/3">
+          <div>
             <WidgetList
               widgets={state.widgets}
               onMove={handleMoveWidget}
@@ -139,7 +139,7 @@ function App() {
           </div>
 
           {/* Dashboard preview */}
-          <div className="lg:w-2/3">
+          <div>
             <div className="border-4 border-black bg-white p-4">
               <h3 className="font-bold text-lg mb-4">プレビュー</h3>
               <div ref={dashboardRef}>
