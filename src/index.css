@@ -7,13 +7,7 @@
     font-family: system-ui, -apple-system, sans-serif;
     margin: 0;
     padding: 0;
-  }
-}
-
-/* E-paper display optimizations */
-@layer utilities {
-  /* High contrast for e-paper displays */
-  * {
+    /* E-paper display optimization: high contrast font rendering */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

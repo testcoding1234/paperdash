@@ -75,7 +75,7 @@ function App() {
         {/* Header */}
         <div className="mb-4 border-4 border-black bg-white p-4">
           <div className="flex items-center justify-between gap-4 mb-4">
-            <h1 className="text-2xl font-bold">{JAPANESE_LABELS.appTitle}</h1>
+            <h1 className="text-3xl font-bold">{JAPANESE_LABELS.appTitle}</h1>
             <button
               onClick={() => setShowSettings(true)}
               className="border-2 border-black px-4 py-2 font-bold hover:bg-black hover:text-white"
