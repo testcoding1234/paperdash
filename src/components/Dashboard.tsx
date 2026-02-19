@@ -10,7 +10,7 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = ({
   widgets,
-  layout,
+  layout: _layout, // Kept for backward compatibility, but unused (always single column)
   onWidgetUpdate,
   previewMode = false,
 }) => {
@@ -18,10 +18,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
     .filter((w) => w.enabled)
     .sort((a, b) => a.order - b.order);
 
-  // E-paper optimized: fixed layout without responsive breakpoints
-  const layoutClass = layout === '2-column' 
-    ? 'grid grid-cols-2 gap-3' 
-    : 'flex flex-col gap-3';
+  // Single column layout - full-width banner widgets stacked vertically
+  const layoutClass = 'flex flex-col gap-3';
 
   return (
     <div className={layoutClass}>
@@ -35,7 +33,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div
             key={widget.id}
             data-widget={widget.type}
-            className={layout === '2-column' && widget.size === 'L' ? 'col-span-2' : ''}
           >
             <WidgetComponent
               config={widget}

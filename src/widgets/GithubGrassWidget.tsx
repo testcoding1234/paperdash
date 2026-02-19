@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { WidgetProps, GithubSettings } from '../types';
 import { fetchGithubContributions } from '../utils/github';
-import type { GithubData, ContributionDay } from '../utils/github';
+import type { GithubData } from '../utils/github';
 
 export const GithubGrassWidget: React.FC<WidgetProps> = ({ config }) => {
   const [data, setData] = useState<GithubData | null>(null);
@@ -91,36 +91,16 @@ export const GithubGrassWidget: React.FC<WidgetProps> = ({ config }) => {
       <div className="font-bold mb-2">GitHub - {settings.username}</div>
       <div className="text-xs mb-2">{settings.range}日間: {data?.totalContributions} contributions</div>
       
-      {/* Horizontal grass layout (left to right by date) */}
-      <div className="flex gap-0.5 overflow-x-auto">
-        {/* Render by weeks, with days going vertically within each week column */}
-        {(() => {
-          const contributions = data?.contributions || [];
-          const weeks: ContributionDay[][] = [];
-          let currentWeek: ContributionDay[] = [];
-          
-          contributions.forEach((day, index) => {
-            currentWeek.push(day);
-            // Group by 7 days (week)
-            if (currentWeek.length === 7 || index === contributions.length - 1) {
-              weeks.push([...currentWeek]);
-              currentWeek = [];
-            }
-          });
-          
-          return weeks.map((week, weekIndex) => (
-            <div key={weekIndex} className="flex flex-col gap-0.5">
-              {week.map((day, dayIndex) => (
-                <div
-                  key={dayIndex}
-                  className={`${getCellSize()} ${getColor(day.level)}`}
-                  title={`${day.date}: ${day.count}`}
-                  aria-label={`${day.date}: ${day.count} contributions`}
-                />
-              ))}
-            </div>
-          ));
-        })()}
+      {/* Horizontal grass layout (left to right by date, wrapping rows) */}
+      <div className="flex flex-wrap gap-0.5">
+        {(data?.contributions || []).map((day, index) => (
+          <div
+            key={index}
+            className={`${getCellSize()} ${getColor(day.level)}`}
+            title={`${day.date}: ${day.count}`}
+            aria-label={`${day.date}: ${day.count} contributions`}
+          />
+        ))}
       </div>
     </div>
   );

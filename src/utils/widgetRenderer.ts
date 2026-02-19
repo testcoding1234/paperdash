@@ -29,11 +29,20 @@ const estimateWeatherHeight = (widget: WidgetConfig, padding: number): number =>
 };
 
 const estimateGithubHeight = (widget: WidgetConfig, padding: number): number => {
+  const settings = widget.settings as GithubSettings;
   const fontSize = widget.size === 'S' ? 9 : widget.size === 'L' ? 14 : 11;
   const cellSize = widget.size === 'S' ? 3 : widget.size === 'L' ? 6 : 4;
   const cellGap = 1;
-  // Title + range text + grass grid (7 rows)
-  return padding * 2 + fontSize * 2 + 8 + (cellSize + cellGap) * 7;
+  
+  // Calculate how many cells fit per row based on available width
+  // Using conservative estimate: canvas width (296) - margins (20) - padding (2 * padding)
+  const availableWidth = 296 - 20 - (padding * 2);
+  const maxCellsPerRow = Math.floor(availableWidth / (cellSize + cellGap));
+  const daysToShow = settings.range || 30;
+  const numberOfRows = Math.ceil(daysToShow / maxCellsPerRow);
+  
+  // Title + range text + grass grid (dynamic rows based on wrapping)
+  return padding * 2 + fontSize * 2 + 8 + (cellSize + cellGap) * numberOfRows;
 };
 
 const estimateTodoHeight = (widget: WidgetConfig, padding: number): number => {
@@ -145,37 +154,36 @@ const renderGithubWidget = (
   const rangeText = `${settings.range || 30}日間`;
   ctx.fillText(rangeText, x, y + fontSize + 3);
   
-  // Render grass visualization (horizontal blocks) - PLACEHOLDER ONLY
+  // Render grass visualization (horizontal chronological blocks with wrapping)
   // All cells shown as empty (level 0) until contribution data is provided
   const grassY = y + fontSize * 2 + 8;
   const cellSize = widget.size === 'S' ? 3 : widget.size === 'L' ? 6 : 4;
   const cellGap = 1;
   
-  // Render horizontal grass grid (simplified for now)
-  const daysToShow = Math.min(settings.range || 30, Math.floor(width / (cellSize + cellGap)));
-  const weeksToShow = Math.ceil(daysToShow / 7);
+  // Calculate how many cells fit per row
+  const maxCellsPerRow = Math.floor(width / (cellSize + cellGap));
+  const daysToShow = settings.range || 30;
   
-  for (let week = 0; week < weeksToShow; week++) {
-    for (let day = 0; day < 7; day++) {
-      const dayIndex = week * 7 + day;
-      if (dayIndex >= daysToShow) break;
-      
-      const cellX = x + week * (cellSize + cellGap);
-      const cellY = grassY + day * (cellSize + cellGap);
-      
-      // Mock contribution level (0-4) - ALWAYS 0 until live data is passed
-      const level = 0;
-      
-      const color = getGrassColor(level);
-      ctx.fillStyle = color;
-      ctx.fillRect(cellX, cellY, cellSize, cellSize);
-      
-      // Border for empty cells
-      if (level === 0) {
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(cellX, cellY, cellSize, cellSize);
-      }
+  // Render cells horizontally, wrapping to next row when needed
+  for (let i = 0; i < daysToShow; i++) {
+    const row = Math.floor(i / maxCellsPerRow);
+    const col = i % maxCellsPerRow;
+    
+    const cellX = x + col * (cellSize + cellGap);
+    const cellY = grassY + row * (cellSize + cellGap);
+    
+    // Mock contribution level (0-4) - ALWAYS 0 until live data is passed
+    const level = 0;
+    
+    const color = getGrassColor(level);
+    ctx.fillStyle = color;
+    ctx.fillRect(cellX, cellY, cellSize, cellSize);
+    
+    // Border for empty cells
+    if (level === 0) {
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(cellX, cellY, cellSize, cellSize);
     }
   }
   
