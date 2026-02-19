@@ -52,7 +52,8 @@ const estimateGithubHeight = (widget: WidgetConfig): number => {
   const availableWidth = CANVAS_WIDTH - CANVAS_HORIZONTAL_MARGINS - (WIDGET_PADDING * 2);
   const maxCellsPerRow = Math.floor(availableWidth / (cellSize + cellGap));
   const daysToShow = settings.range || 30;
-  // Cap at 2 rows maximum for e-paper display
+  // Cap at 2 rows maximum to fit e-paper display (296x128) constraint
+  // Prevents canvas overflow when showing 30-day range
   const numberOfRows = Math.min(2, Math.ceil(daysToShow / maxCellsPerRow));
   
   // Title + range text + grass grid
@@ -145,7 +146,9 @@ const renderWeatherWidget = (
     ctx.fillText(emoji, x, y + TITLE_FONT_SIZE + FONT_SIZE + 8);
     
     // Temperature display with max/min
-    // Derive min/max from single temperature (±2°C fallback)
+    // Note: JMA API returns single temperature value
+    // Derive min/max using ±2°C approximation for e-paper display
+    // This provides useful range estimate without additional API calls
     const temp = weatherData.temperature;
     const maxTemp = temp + 2;
     const minTemp = temp - 2;
