@@ -9,3 +9,12 @@
     padding: 0;
   }
 }
+
+/* E-paper display optimizations */
+@layer utilities {
+  /* High contrast for e-paper displays */
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
