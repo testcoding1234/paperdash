@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import type { DashboardState, WidgetConfig, WidgetSize } from './types';
+import type { DashboardState, WidgetConfig } from './types';
 import { loadState, saveState, updateWidget, moveWidget, addWidget, deleteWidget } from './utils/storage';
 import { WIDGET_REGISTRY } from './widgets';
 import { JAPANESE_LABELS } from './constants';
@@ -34,13 +34,6 @@ function App() {
       ...state,
       widgets: moveWidget(state.widgets, id, direction),
     });
-  };
-
-  const handleSizeChange = (id: string, size: WidgetSize) => {
-    const widget = state.widgets.find((w) => w.id === id);
-    if (widget) {
-      handleWidgetUpdate({ ...widget, size });
-    }
   };
 
   const handleToggleWidget = (id: string) => {
@@ -104,7 +97,6 @@ function App() {
             <WidgetList
               widgets={state.widgets}
               onMove={handleMoveWidget}
-              onSizeChange={handleSizeChange}
               onToggle={handleToggleWidget}
               onDelete={handleDeleteWidget}
               onSettings={setEditingWidget}
@@ -118,7 +110,6 @@ function App() {
               <div ref={dashboardRef}>
                 <Dashboard
                   widgets={state.widgets}
-                  layout={state.layout}
                   onWidgetUpdate={handleWidgetUpdate}
                 />
               </div>

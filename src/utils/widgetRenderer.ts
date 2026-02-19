@@ -1,73 +1,78 @@
 import type { WidgetConfig, WeatherSettings, GithubSettings, TodoSettings } from '../types';
-import { CANVAS_WIDTH } from '../constants';
+import { CANVAS_WIDTH } from '../constants/index';
+import type { WeatherData } from './weather';
+import { getWeatherEmoji } from './weather';
+import type { GithubData } from './github';
+
+// Fixed padding for all widgets (no size variants)
+const WIDGET_PADDING = 8;
+const FONT_SIZE = 11;
+const TITLE_FONT_SIZE = 12;
+
+// Optional live data that can be passed to renderer
+export interface RenderData {
+  weather?: Record<string, WeatherData>;
+  github?: Record<string, GithubData>;
+}
 
 /**
  * Estimate the height needed to render a widget
  * This should match the actual rendering logic in renderWidgetToCanvas
+ * MUST be conservative to prevent canvas overflow
  */
 export const estimateWidgetHeight = (widget: WidgetConfig): number => {
-  // Base padding
-  const padding = widget.size === 'S' ? 4 : widget.size === 'L' ? 12 : 8;
-  
   // Widget-specific height estimation
   switch (widget.type) {
     case 'weather':
-      return estimateWeatherHeight(widget, padding);
+      return estimateWeatherHeight();
     case 'github':
-      return estimateGithubHeight(widget, padding);
+      return estimateGithubHeight(widget);
     case 'todo':
-      return estimateTodoHeight(widget, padding);
+      return estimateTodoHeight(widget);
     default:
       // Default fallback
-      return widget.size === 'S' ? 30 : widget.size === 'L' ? 60 : 45;
+      return 45;
   }
 };
 
-const estimateWeatherHeight = (widget: WidgetConfig, padding: number): number => {
-  const fontSize = widget.size === 'S' ? 10 : widget.size === 'L' ? 16 : 12;
-  // Title + location line + padding
-  return padding * 2 + fontSize * 2 + 8;
+const estimateWeatherHeight = (): number => {
+  // Title line + weather emoji/temp line + condition line + padding
+  // Conservative estimate
+  return WIDGET_PADDING * 2 + TITLE_FONT_SIZE + 20 + FONT_SIZE;
 };
 
-const estimateGithubHeight = (widget: WidgetConfig, padding: number): number => {
+const estimateGithubHeight = (widget: WidgetConfig): number => {
   const settings = widget.settings as GithubSettings;
-  const fontSize = widget.size === 'S' ? 9 : widget.size === 'L' ? 14 : 11;
-  const cellSize = widget.size === 'S' ? 3 : widget.size === 'L' ? 6 : 4;
+  const cellSize = 4;
   const cellGap = 1;
   
   // Calculate how many cells fit per row based on available width
   // Canvas dimensions: CANVAS_WIDTH - horizontal margins - widget padding
   const CANVAS_HORIZONTAL_MARGINS = 20;
-  const availableWidth = CANVAS_WIDTH - CANVAS_HORIZONTAL_MARGINS - (padding * 2);
+  const availableWidth = CANVAS_WIDTH - CANVAS_HORIZONTAL_MARGINS - (WIDGET_PADDING * 2);
   const maxCellsPerRow = Math.floor(availableWidth / (cellSize + cellGap));
   const daysToShow = settings.range || 30;
-  const numberOfRows = Math.ceil(daysToShow / maxCellsPerRow);
+  // Cap at 2 rows maximum to fit e-paper display (296x128) constraint
+  // Prevents canvas overflow when showing 30-day range
+  const numberOfRows = Math.min(2, Math.ceil(daysToShow / maxCellsPerRow));
   
-  // Title + range text + grass grid (dynamic rows based on wrapping)
-  return padding * 2 + fontSize * 2 + 8 + (cellSize + cellGap) * numberOfRows;
+  // Title + range text + grass grid
+  return WIDGET_PADDING * 2 + TITLE_FONT_SIZE + FONT_SIZE + 8 + (cellSize + cellGap) * numberOfRows;
 };
 
-const estimateTodoHeight = (widget: WidgetConfig, padding: number): number => {
+const estimateTodoHeight = (widget: WidgetConfig): number => {
   const settings = widget.settings as TodoSettings;
-  const fontSize = widget.size === 'S' ? 9 : widget.size === 'L' ? 14 : 11;
-  const lineHeight = fontSize + 4;
-  const itemCount = Math.min(settings.items?.length || 0, 5); // Cap at 5 visible items
+  const lineHeight = FONT_SIZE + 4;
+  // Cap at 3 items for canvas (not 5) to prevent overflow
+  const itemCount = Math.min(settings.items?.length || 0, 3);
   // Title + items
-  return padding * 2 + fontSize + 6 + (itemCount * lineHeight);
+  return WIDGET_PADDING * 2 + TITLE_FONT_SIZE + 6 + (itemCount * lineHeight);
 };
 
 /**
  * Render a widget to canvas using its data model, not DOM textContent
  * This ensures proper rendering of visual markers (GitHub grass) and excludes UI controls
- * 
- * Note: This renderer uses static widget configuration data only.
- * Dynamic data (weather conditions, GitHub contributions) fetched at runtime
- * is not passed to this function and will show placeholder values.
- * 
- * For production use with live data, consider:
- * 1. Passing fetched data as an additional parameter
- * 2. Storing fetched data in widget config before image generation
- * 3. Using a separate data cache mechanism
+ * Uses fixed padding and font sizes for consistent e-paper display
  */
 export const renderWidgetToCanvas = (
   ctx: CanvasRenderingContext2D,
@@ -75,7 +80,8 @@ export const renderWidgetToCanvas = (
   x: number,
   y: number,
   width: number,
-  height: number
+  height: number,
+  liveData?: RenderData
 ): void => {
   // Draw widget border
   ctx.strokeStyle = '#000000';
@@ -90,23 +96,22 @@ export const renderWidgetToCanvas = (
   ctx.fillStyle = '#000000';
   ctx.textBaseline = 'top';
 
-  const padding = widget.size === 'S' ? 4 : widget.size === 'L' ? 12 : 8;
-  const innerX = x + padding;
-  const innerY = y + padding;
-  const innerWidth = width - padding * 2;
+  const innerX = x + WIDGET_PADDING;
+  const innerY = y + WIDGET_PADDING;
+  const innerWidth = width - WIDGET_PADDING * 2;
 
   switch (widget.type) {
     case 'weather':
-      renderWeatherWidget(ctx, widget, innerX, innerY, innerWidth);
+      renderWeatherWidget(ctx, widget, innerX, innerY, innerWidth, liveData);
       break;
     case 'github':
-      renderGithubWidget(ctx, widget, innerX, innerY, innerWidth, height - padding * 2);
+      renderGithubWidget(ctx, widget, innerX, innerY, innerWidth, height - WIDGET_PADDING * 2, liveData);
       break;
     case 'todo':
       renderTodoWidget(ctx, widget, innerX, innerY, innerWidth);
       break;
     default:
-      ctx.font = 'bold 12px sans-serif';
+      ctx.font = `bold ${TITLE_FONT_SIZE}px sans-serif`;
       ctx.fillText('Unknown Widget', innerX, innerY);
   }
 };
@@ -116,21 +121,47 @@ const renderWeatherWidget = (
   widget: WidgetConfig,
   x: number,
   y: number,
-  _width: number
+  _width: number,
+  liveData?: RenderData
 ): void => {
   const settings = widget.settings as WeatherSettings;
-  const fontSize = widget.size === 'S' ? 10 : widget.size === 'L' ? 16 : 12;
   
   // Title
-  ctx.font = `bold ${fontSize}px sans-serif`;
+  ctx.font = `bold ${TITLE_FONT_SIZE}px sans-serif`;
   ctx.fillText('天気', x, y);
   
-  // Note: This renders placeholder data from widget config only.
-  // Live weather data fetched at runtime is not available here.
-  // To show current conditions, pass weather data as an additional parameter.
-  ctx.font = `${fontSize}px sans-serif`;
-  const locationName = settings.locationName || '設定中';
-  ctx.fillText(`地域: ${locationName}`, x, y + fontSize + 4);
+  // Get weather data if available
+  const weatherKey = settings.locationCode || '130000';
+  const weatherData = liveData?.weather?.[weatherKey];
+  
+  if (weatherData) {
+    // Line 1: Location name
+    const locationName = weatherData.locationName || settings.locationName || '設定中';
+    ctx.font = `${FONT_SIZE}px sans-serif`;
+    ctx.fillText(`地域: ${locationName}`, x, y + TITLE_FONT_SIZE + 4);
+    
+    // Line 2: Emoji and temperatures
+    const emoji = getWeatherEmoji(weatherData.condition);
+    ctx.font = `${FONT_SIZE + 4}px sans-serif`;
+    ctx.fillText(emoji, x, y + TITLE_FONT_SIZE + FONT_SIZE + 8);
+    
+    // Temperature display with max/min
+    // Note: JMA API returns single temperature value
+    // Derive min/max using ±2°C approximation for e-paper display
+    // This provides useful range estimate without additional API calls
+    const temp = weatherData.temperature;
+    const maxTemp = temp + 2;
+    const minTemp = temp - 2;
+    
+    ctx.font = `${FONT_SIZE}px sans-serif`;
+    const tempText = `最高: ${maxTemp}°C / 最低: ${minTemp}°C`;
+    ctx.fillText(tempText, x + 20, y + TITLE_FONT_SIZE + FONT_SIZE + 10);
+  } else {
+    // Fallback: show location only
+    ctx.font = `${FONT_SIZE}px sans-serif`;
+    const locationName = settings.locationName || '設定中';
+    ctx.fillText(`地域: ${locationName}`, x, y + TITLE_FONT_SIZE + 4);
+  }
 };
 
 const renderGithubWidget = (
@@ -139,27 +170,28 @@ const renderGithubWidget = (
   x: number,
   y: number,
   width: number,
-  _height: number
+  _height: number,
+  liveData?: RenderData
 ): void => {
   const settings = widget.settings as GithubSettings;
-  const fontSize = widget.size === 'S' ? 9 : widget.size === 'L' ? 14 : 11;
   
   // Title
-  ctx.font = `bold ${fontSize}px sans-serif`;
+  ctx.font = `bold ${TITLE_FONT_SIZE}px sans-serif`;
   const title = `GitHub - ${settings.username || '未設定'}`;
   ctx.fillText(title, x, y);
   
-  // Note: This renders placeholder grass visualization only.
-  // Live contribution data fetched at runtime is not available here.
-  // To show actual contributions, pass GitHub data as an additional parameter.
-  ctx.font = `${fontSize - 2}px sans-serif`;
+  // Range text
+  ctx.font = `${FONT_SIZE}px sans-serif`;
   const rangeText = `${settings.range || 30}日間`;
-  ctx.fillText(rangeText, x, y + fontSize + 3);
+  ctx.fillText(rangeText, x, y + TITLE_FONT_SIZE + 3);
+  
+  // Get GitHub data if available
+  const githubKey = settings.username || '';
+  const githubData = liveData?.github?.[githubKey];
   
   // Render grass visualization (horizontal chronological blocks with wrapping)
-  // All cells shown as empty (level 0) until contribution data is provided
-  const grassY = y + fontSize * 2 + 8;
-  const cellSize = widget.size === 'S' ? 3 : widget.size === 'L' ? 6 : 4;
+  const grassY = y + TITLE_FONT_SIZE + FONT_SIZE + 8;
+  const cellSize = 4;
   const cellGap = 1;
   
   // Calculate how many cells fit per row
@@ -167,15 +199,19 @@ const renderGithubWidget = (
   const daysToShow = settings.range || 30;
   
   // Render cells horizontally, wrapping to next row when needed
-  for (let i = 0; i < daysToShow; i++) {
+  // Maximum 2 rows for e-paper display
+  const maxRows = 2;
+  const totalCells = Math.min(daysToShow, maxCellsPerRow * maxRows);
+  
+  for (let i = 0; i < totalCells; i++) {
     const row = Math.floor(i / maxCellsPerRow);
     const col = i % maxCellsPerRow;
     
     const cellX = x + col * (cellSize + cellGap);
     const cellY = grassY + row * (cellSize + cellGap);
     
-    // Mock contribution level (0-4) - ALWAYS 0 until live data is passed
-    const level = 0;
+    // Use live data if available, otherwise show empty cells
+    const level = githubData?.contributions?.[i]?.level ?? 0;
     
     const color = getGrassColor(level);
     ctx.fillStyle = color;
@@ -212,18 +248,17 @@ const renderTodoWidget = (
   width: number
 ): void => {
   const settings = widget.settings as TodoSettings;
-  const fontSize = widget.size === 'S' ? 9 : widget.size === 'L' ? 14 : 11;
   
   // Title
-  ctx.font = `bold ${fontSize}px sans-serif`;
+  ctx.font = `bold ${TITLE_FONT_SIZE}px sans-serif`;
   ctx.fillText('To-Do', x, y);
   
-  let currentY = y + fontSize + 6;
-  const lineHeight = fontSize + 4;
-  const checkboxSize = fontSize - 2;
+  let currentY = y + TITLE_FONT_SIZE + 6;
+  const lineHeight = FONT_SIZE + 4;
+  const checkboxSize = FONT_SIZE - 2;
   
   if (!settings.items || settings.items.length === 0) {
-    ctx.font = `${fontSize - 2}px sans-serif`;
+    ctx.font = `${FONT_SIZE}px sans-serif`;
     ctx.fillStyle = '#666666';
     ctx.fillText('タスクがありません', x, currentY);
     ctx.fillStyle = '#000000';
@@ -231,8 +266,8 @@ const renderTodoWidget = (
   }
   
   // Render todo items (display only, no input controls)
-  // Cap at 5 items to match estimateTodoHeight
-  const itemsToRender = settings.items.slice(0, 5);
+  // Cap at 3 items to prevent canvas overflow
+  const itemsToRender = settings.items.slice(0, 3);
   
   itemsToRender.forEach((item) => {
     // Render checkbox
@@ -248,7 +283,7 @@ const renderTodoWidget = (
     
     // Render text
     ctx.fillStyle = item.completed ? '#666666' : '#000000';
-    ctx.font = `${fontSize}px sans-serif`;
+    ctx.font = `${FONT_SIZE}px sans-serif`;
     
     // Truncate long text
     let displayText = item.text;

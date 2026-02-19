@@ -2,7 +2,10 @@ import { useRef, useEffect, useState } from 'react';
 import type { WidgetConfig } from '../types';
 import { JAPANESE_LABELS, CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants';
 import { downloadCanvas } from '../utils/renderer';
-import { renderWidgetToCanvas, estimateWidgetHeight } from '../utils/widgetRenderer';
+import { renderWidgetToCanvas, estimateWidgetHeight, type RenderData } from '../utils/widgetRenderer';
+import { fetchWeather } from '../utils/weather';
+import { fetchGithubContributions } from '../utils/github';
+import type { WeatherSettings, GithubSettings } from '../types';
 
 interface ImageGeneratorProps {
   widgets: WidgetConfig[];
@@ -40,21 +43,77 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
         .filter(w => w.enabled)
         .sort((a, b) => a.order - b.order);
 
+      // Fetch live data for weather and github widgets
+      const liveData: RenderData = {
+        weather: {},
+        github: {},
+      };
+
+      // Fetch weather data for all weather widgets
+      const weatherWidgets = enabledWidgets.filter(w => w.type === 'weather');
+      await Promise.all(
+        weatherWidgets.map(async (widget) => {
+          const settings = widget.settings as WeatherSettings;
+          const locationCode = settings.locationCode || '130000';
+          try {
+            const data = await fetchWeather(locationCode);
+            liveData.weather![locationCode] = data;
+          } catch (error) {
+            console.error('Failed to fetch weather for', locationCode, error);
+          }
+        })
+      );
+
+      // Fetch GitHub data for all github widgets
+      const githubWidgets = enabledWidgets.filter(w => w.type === 'github');
+      await Promise.all(
+        githubWidgets.map(async (widget) => {
+          const settings = widget.settings as GithubSettings;
+          const username = settings.username;
+          if (username) {
+            try {
+              const data = await fetchGithubContributions(username, settings.range || 30);
+              liveData.github![username] = data;
+            } catch (error) {
+              console.error('Failed to fetch GitHub data for', username, error);
+            }
+          }
+        })
+      );
+
       // Calculate total content height to center vertically
       const widgetSpacing = 6;
       const widgetHeights = enabledWidgets.map(w => estimateWidgetHeight(w));
       
-      const totalContentHeight = widgetHeights.reduce((sum, h) => sum + h, 0) 
-        + (widgetHeights.length - 1) * widgetSpacing;
+      let totalContentHeight = widgetHeights.reduce((sum, h) => sum + h, 0) 
+        + Math.max(0, (widgetHeights.length - 1)) * widgetSpacing;
+      
+      // CRITICAL: Prevent canvas overflow
+      // If content exceeds available height, reduce spacing dynamically
+      const maxContentHeight = CANVAS_HEIGHT - 16; // Leave 8px margin top and bottom
+      let currentSpacing = widgetSpacing;
+      
+      if (totalContentHeight > maxContentHeight && widgetHeights.length > 1) {
+        // Try reducing spacing first
+        const minSpacing = 2;
+        currentSpacing = Math.max(
+          minSpacing, 
+          Math.floor((maxContentHeight - widgetHeights.reduce((sum, h) => sum + h, 0)) / (widgetHeights.length - 1))
+        );
+        totalContentHeight = widgetHeights.reduce((sum, h) => sum + h, 0) + (widgetHeights.length - 1) * currentSpacing;
+      }
       
       // Center vertically in 296x128 canvas with minimum 8px margin
       let yOffset = Math.max(8, (CANVAS_HEIGHT - totalContentHeight) / 2);
 
-      // Render each widget using dedicated renderer
+      // Render each widget using dedicated renderer with live data
       enabledWidgets.forEach((widget, index) => {
         const height = widgetHeights[index];
-        renderWidgetToCanvas(ctx, widget, 10, yOffset, CANVAS_WIDTH - 20, height);
-        yOffset += height + widgetSpacing;
+        // Only render if there's room (prevent overflow)
+        if (yOffset + height <= CANVAS_HEIGHT - 8) {
+          renderWidgetToCanvas(ctx, widget, 10, yOffset, CANVAS_WIDTH - 20, height, liveData);
+          yOffset += height + currentSpacing;
+        }
       });
     } catch (error) {
       console.error('Image generation error:', error);

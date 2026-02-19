@@ -1,12 +1,9 @@
-export type WidgetSize = 'S' | 'M' | 'L';
-export type LayoutMode = '1-column' | '2-column';
 export type GrassRange = 7 | 30;
 
 export interface WidgetConfig {
   id: string;
   type: string;
   enabled: boolean;
-  size: WidgetSize;
   order: number;
   settings: Record<string, any>;
 }
@@ -33,7 +30,6 @@ export interface TodoItem {
 
 export interface DashboardState {
   widgets: WidgetConfig[];
-  layout: LayoutMode;
   settings: {
     defaultLocation: string;
     githubUsername: string;
