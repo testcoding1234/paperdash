@@ -83,26 +83,37 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
 
       // Calculate total content height to center vertically
       const widgetSpacing = 6;
-      const widgetHeights = enabledWidgets.map(w => estimateWidgetHeight(w));
-      
-      let totalContentHeight = widgetHeights.reduce((sum, h) => sum + h, 0) 
-        + Math.max(0, (widgetHeights.length - 1)) * widgetSpacing;
-      
-      // CRITICAL: Prevent canvas overflow
-      // If content exceeds available height, reduce spacing dynamically
       const maxContentHeight = CANVAS_HEIGHT - 16; // Leave 8px margin top and bottom
       let currentSpacing = widgetSpacing;
-      
+      let fontScale = 1;
+
+      // Initial height estimate with default font scale
+      let widgetHeights = enabledWidgets.map(w => estimateWidgetHeight(w, fontScale));
+      let totalContentHeight = widgetHeights.reduce((sum, h) => sum + h, 0)
+        + Math.max(0, (widgetHeights.length - 1)) * currentSpacing;
+
+      // CRITICAL: Prevent canvas overflow
+      // Step 1: Try reducing spacing first
       if (totalContentHeight > maxContentHeight && widgetHeights.length > 1) {
-        // Try reducing spacing first
         const minSpacing = 2;
         currentSpacing = Math.max(
-          minSpacing, 
+          minSpacing,
           Math.floor((maxContentHeight - widgetHeights.reduce((sum, h) => sum + h, 0)) / (widgetHeights.length - 1))
         );
         totalContentHeight = widgetHeights.reduce((sum, h) => sum + h, 0) + (widgetHeights.length - 1) * currentSpacing;
       }
-      
+
+      // Step 2: If still too tall, reduce font scale so everything fits on one page
+      if (totalContentHeight > maxContentHeight) {
+        const MIN_FONT_SCALE = 0.6;
+        do {
+          fontScale = Math.max(MIN_FONT_SCALE, fontScale - 0.05);
+          widgetHeights = enabledWidgets.map(w => estimateWidgetHeight(w, fontScale));
+          totalContentHeight = widgetHeights.reduce((sum, h) => sum + h, 0)
+            + Math.max(0, (widgetHeights.length - 1)) * currentSpacing;
+        } while (totalContentHeight > maxContentHeight && fontScale > MIN_FONT_SCALE);
+      }
+
       // Center vertically in 296x128 canvas with minimum 8px margin
       let yOffset = Math.max(8, (CANVAS_HEIGHT - totalContentHeight) / 2);
 
@@ -111,7 +122,7 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
         const height = widgetHeights[index];
         // Only render if there's room (prevent overflow)
         if (yOffset + height <= CANVAS_HEIGHT - 8) {
-          renderWidgetToCanvas(ctx, widget, 10, yOffset, CANVAS_WIDTH - 20, height, liveData);
+          renderWidgetToCanvas(ctx, widget, 10, yOffset, CANVAS_WIDTH - 20, height, liveData, fontScale);
           yOffset += height + currentSpacing;
         }
       });

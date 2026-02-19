@@ -9,6 +9,12 @@ const WIDGET_PADDING = 8;
 const FONT_SIZE = 11;
 const TITLE_FONT_SIZE = 12;
 
+// Compute font sizes from scale, enforcing readable minimums
+const getScaledFonts = (fontScale: number = 1) => ({
+  fontSize: Math.max(6, Math.floor(FONT_SIZE * fontScale)),
+  titleFontSize: Math.max(7, Math.floor(TITLE_FONT_SIZE * fontScale)),
+});
+
 // Optional live data that can be passed to renderer
 export interface RenderData {
   weather?: Record<string, WeatherData>;
@@ -20,28 +26,29 @@ export interface RenderData {
  * This should match the actual rendering logic in renderWidgetToCanvas
  * MUST be conservative to prevent canvas overflow
  */
-export const estimateWidgetHeight = (widget: WidgetConfig): number => {
+export const estimateWidgetHeight = (widget: WidgetConfig, fontScale: number = 1): number => {
   // Widget-specific height estimation
   switch (widget.type) {
     case 'weather':
-      return estimateWeatherHeight();
+      return estimateWeatherHeight(fontScale);
     case 'github':
-      return estimateGithubHeight(widget);
+      return estimateGithubHeight(widget, fontScale);
     case 'todo':
-      return estimateTodoHeight(widget);
+      return estimateTodoHeight(fontScale);
     default:
       // Default fallback
       return 45;
   }
 };
 
-const estimateWeatherHeight = (): number => {
-  // Title line + weather emoji/temp line + condition line + padding
-  // Conservative estimate
-  return WIDGET_PADDING * 2 + TITLE_FONT_SIZE + 20 + FONT_SIZE;
+const estimateWeatherHeight = (fontScale: number = 1): number => {
+  const { fontSize, titleFontSize } = getScaledFonts(fontScale);
+  // Title+location (one combined line) + emoji/temp line + padding
+  return WIDGET_PADDING * 2 + titleFontSize + 4 + (fontSize + 4);
 };
 
-const estimateGithubHeight = (widget: WidgetConfig): number => {
+const estimateGithubHeight = (widget: WidgetConfig, fontScale: number = 1): number => {
+  const { fontSize, titleFontSize } = getScaledFonts(fontScale);
   const settings = widget.settings as GithubSettings;
   const cellSize = 4;
   const cellGap = 1;
@@ -57,16 +64,14 @@ const estimateGithubHeight = (widget: WidgetConfig): number => {
   const numberOfRows = Math.min(2, Math.ceil(daysToShow / maxCellsPerRow));
   
   // Title + range text + grass grid
-  return WIDGET_PADDING * 2 + TITLE_FONT_SIZE + FONT_SIZE + 8 + (cellSize + cellGap) * numberOfRows;
+  return WIDGET_PADDING * 2 + titleFontSize + fontSize + 8 + (cellSize + cellGap) * numberOfRows;
 };
 
-const estimateTodoHeight = (widget: WidgetConfig): number => {
-  const settings = widget.settings as TodoSettings;
-  const lineHeight = FONT_SIZE + 4;
-  // Cap at 3 items for canvas (not 5) to prevent overflow
-  const itemCount = Math.min(settings.items?.length || 0, 3);
-  // Title + items
-  return WIDGET_PADDING * 2 + TITLE_FONT_SIZE + 6 + (itemCount * lineHeight);
+const estimateTodoHeight = (fontScale: number = 1): number => {
+  const { fontSize, titleFontSize } = getScaledFonts(fontScale);
+  const lineHeight = fontSize + 4;
+  // Title + single line containing all tasks joined with full-width spaces
+  return WIDGET_PADDING * 2 + titleFontSize + 6 + lineHeight;
 };
 
 /**
@@ -81,7 +86,8 @@ export const renderWidgetToCanvas = (
   y: number,
   width: number,
   height: number,
-  liveData?: RenderData
+  liveData?: RenderData,
+  fontScale: number = 1
 ): void => {
   // Draw widget border
   ctx.strokeStyle = '#000000';
@@ -102,17 +108,19 @@ export const renderWidgetToCanvas = (
 
   switch (widget.type) {
     case 'weather':
-      renderWeatherWidget(ctx, widget, innerX, innerY, innerWidth, liveData);
+      renderWeatherWidget(ctx, widget, innerX, innerY, innerWidth, liveData, fontScale);
       break;
     case 'github':
-      renderGithubWidget(ctx, widget, innerX, innerY, innerWidth, height - WIDGET_PADDING * 2, liveData);
+      renderGithubWidget(ctx, widget, innerX, innerY, innerWidth, height - WIDGET_PADDING * 2, liveData, fontScale);
       break;
     case 'todo':
-      renderTodoWidget(ctx, widget, innerX, innerY, innerWidth);
+      renderTodoWidget(ctx, widget, innerX, innerY, innerWidth, fontScale);
       break;
-    default:
-      ctx.font = `bold ${TITLE_FONT_SIZE}px sans-serif`;
+    default: {
+      const { titleFontSize } = getScaledFonts(fontScale);
+      ctx.font = `bold ${titleFontSize}px sans-serif`;
       ctx.fillText('Unknown Widget', innerX, innerY);
+    }
   }
 };
 
@@ -122,28 +130,26 @@ const renderWeatherWidget = (
   x: number,
   y: number,
   _width: number,
-  liveData?: RenderData
+  liveData?: RenderData,
+  fontScale: number = 1
 ): void => {
+  const { fontSize, titleFontSize } = getScaledFonts(fontScale);
   const settings = widget.settings as WeatherSettings;
-  
-  // Title
-  ctx.font = `bold ${TITLE_FONT_SIZE}px sans-serif`;
-  ctx.fillText('天気', x, y);
   
   // Get weather data if available
   const weatherKey = settings.locationCode || '130000';
   const weatherData = liveData?.weather?.[weatherKey];
+  const locationName = weatherData?.locationName || settings.locationName || '設定中';
+
+  // Line 1: Title + location combined into one line
+  ctx.font = `bold ${titleFontSize}px sans-serif`;
+  ctx.fillText(`天気 ${locationName}`, x, y);
   
   if (weatherData) {
-    // Line 1: Location name
-    const locationName = weatherData.locationName || settings.locationName || '設定中';
-    ctx.font = `${FONT_SIZE}px sans-serif`;
-    ctx.fillText(`地域: ${locationName}`, x, y + TITLE_FONT_SIZE + 4);
-    
-    // Line 2: Emoji and temperatures
+    // Line 2: Emoji and temperatures on the same row
     const emoji = getWeatherEmoji(weatherData.condition);
-    ctx.font = `${FONT_SIZE + 4}px sans-serif`;
-    ctx.fillText(emoji, x, y + TITLE_FONT_SIZE + FONT_SIZE + 8);
+    ctx.font = `${fontSize + 4}px sans-serif`;
+    ctx.fillText(emoji, x, y + titleFontSize + 4);
     
     // Temperature display with max/min
     // Note: JMA API returns single temperature value
@@ -153,14 +159,9 @@ const renderWeatherWidget = (
     const maxTemp = temp + 2;
     const minTemp = temp - 2;
     
-    ctx.font = `${FONT_SIZE}px sans-serif`;
+    ctx.font = `${fontSize}px sans-serif`;
     const tempText = `最高: ${maxTemp}°C / 最低: ${minTemp}°C`;
-    ctx.fillText(tempText, x + 20, y + TITLE_FONT_SIZE + FONT_SIZE + 10);
-  } else {
-    // Fallback: show location only
-    ctx.font = `${FONT_SIZE}px sans-serif`;
-    const locationName = settings.locationName || '設定中';
-    ctx.fillText(`地域: ${locationName}`, x, y + TITLE_FONT_SIZE + 4);
+    ctx.fillText(tempText, x + 20, y + titleFontSize + 6);
   }
 };
 
@@ -171,26 +172,28 @@ const renderGithubWidget = (
   y: number,
   width: number,
   _height: number,
-  liveData?: RenderData
+  liveData?: RenderData,
+  fontScale: number = 1
 ): void => {
+  const { fontSize, titleFontSize } = getScaledFonts(fontScale);
   const settings = widget.settings as GithubSettings;
   
-  // Title
-  ctx.font = `bold ${TITLE_FONT_SIZE}px sans-serif`;
+  // Title — use monospace font for better readability on e-paper
+  ctx.font = `bold ${titleFontSize}px monospace`;
   const title = `GitHub - ${settings.username || '未設定'}`;
   ctx.fillText(title, x, y);
   
-  // Range text
-  ctx.font = `${FONT_SIZE}px sans-serif`;
+  // Range text — monospace for consistent character widths
+  ctx.font = `${fontSize}px monospace`;
   const rangeText = `${settings.range || 30}日間`;
-  ctx.fillText(rangeText, x, y + TITLE_FONT_SIZE + 3);
+  ctx.fillText(rangeText, x, y + titleFontSize + 3);
   
   // Get GitHub data if available
   const githubKey = settings.username || '';
   const githubData = liveData?.github?.[githubKey];
   
   // Render grass visualization (horizontal chronological blocks with wrapping)
-  const grassY = y + TITLE_FONT_SIZE + FONT_SIZE + 8;
+  const grassY = y + titleFontSize + fontSize + 8;
   const cellSize = 4;
   const cellGap = 1;
   
@@ -245,75 +248,41 @@ const renderTodoWidget = (
   widget: WidgetConfig,
   x: number,
   y: number,
-  width: number
+  width: number,
+  fontScale: number = 1
 ): void => {
+  const { fontSize, titleFontSize } = getScaledFonts(fontScale);
   const settings = widget.settings as TodoSettings;
   
   // Title
-  ctx.font = `bold ${TITLE_FONT_SIZE}px sans-serif`;
+  ctx.font = `bold ${titleFontSize}px sans-serif`;
   ctx.fillText('To-Do', x, y);
   
-  let currentY = y + TITLE_FONT_SIZE + 6;
-  const lineHeight = FONT_SIZE + 4;
-  const checkboxSize = FONT_SIZE - 2;
+  const contentY = y + titleFontSize + 6;
   
   if (!settings.items || settings.items.length === 0) {
-    ctx.font = `${FONT_SIZE}px sans-serif`;
+    ctx.font = `${fontSize}px sans-serif`;
     ctx.fillStyle = '#666666';
-    ctx.fillText('タスクがありません', x, currentY);
+    ctx.fillText('タスクがありません', x, contentY);
     ctx.fillStyle = '#000000';
     return;
   }
   
-  // Render todo items (display only, no input controls)
-  // Cap at 3 items to prevent canvas overflow
-  const itemsToRender = settings.items.slice(0, 3);
+  // Build single-line text: all tasks joined with full-width spaces
+  // Use ☐ for unchecked, ☑ for checked
+  const parts = settings.items.map(item => `${item.completed ? '☑' : '☐'}${item.text}`);
+  let lineText = parts.join('　');
   
-  itemsToRender.forEach((item) => {
-    // Render checkbox
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x, currentY, checkboxSize, checkboxSize);
-    
-    // Fill checkbox if completed
-    if (item.completed) {
-      ctx.fillStyle = '#000000';
-      ctx.fillRect(x + 2, currentY + 2, checkboxSize - 4, checkboxSize - 4);
-    }
-    
-    // Render text
-    ctx.fillStyle = item.completed ? '#666666' : '#000000';
-    ctx.font = `${FONT_SIZE}px sans-serif`;
-    
-    // Truncate long text
-    let displayText = item.text;
-    const maxWidth = width - checkboxSize - 8;
-    const textWidth = ctx.measureText(displayText).width;
-    
-    if (textWidth > maxWidth) {
-      while (ctx.measureText(displayText + '...').width > maxWidth && displayText.length > 0) {
-        displayText = displayText.slice(0, -1);
-      }
-      displayText += '...';
-    }
-    
-    ctx.fillText(displayText, x + checkboxSize + 4, currentY);
-    
-    // Strike-through if completed
-    if (item.completed) {
-      ctx.strokeStyle = '#666666';
-      ctx.lineWidth = 1;
-      const textY = currentY + checkboxSize / 2;
-      ctx.beginPath();
-      ctx.moveTo(x + checkboxSize + 4, textY);
-      ctx.lineTo(x + checkboxSize + 4 + ctx.measureText(displayText).width, textY);
-      ctx.stroke();
-    }
-    
-    currentY += lineHeight;
-  });
+  ctx.font = `${fontSize}px sans-serif`;
   
-  // Reset styles
+  // Truncate if the combined text is too wide for the widget
+  if (ctx.measureText(lineText).width > width) {
+    while (lineText.length > 0 && ctx.measureText(lineText + '…').width > width) {
+      lineText = lineText.slice(0, -1);
+    }
+    lineText += '…';
+  }
+  
   ctx.fillStyle = '#000000';
-  ctx.strokeStyle = '#000000';
+  ctx.fillText(lineText, x, contentY);
 };
