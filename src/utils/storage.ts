@@ -37,11 +37,75 @@ const defaultState: DashboardState = {
   },
 };
 
+/**
+ * List of sensitive keys to be removed from state
+ * These keys should never be stored in localStorage
+ */
+const SENSITIVE_KEYS = ['token', 'githubToken', 'auth', 'secret'];
+
+/**
+ * Recursively remove sensitive keys from an object
+ * This ensures no tokens or secrets remain in the state
+ * Returns [cleanedObject, hadSensitiveKeys] tuple
+ */
+function removeSensitiveKeys(obj: unknown): [unknown, boolean] {
+  let foundSensitive = false;
+
+  if (obj === null || obj === undefined) {
+    return [obj, false];
+  }
+
+  if (Array.isArray(obj)) {
+    const cleaned = obj.map(item => {
+      const [cleanedItem, hadSensitive] = removeSensitiveKeys(item);
+      if (hadSensitive) foundSensitive = true;
+      return cleanedItem;
+    });
+    return [cleaned, foundSensitive];
+  }
+
+  if (typeof obj === 'object') {
+    const cleaned: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      // Skip sensitive keys at any level
+      if (SENSITIVE_KEYS.includes(key)) {
+        foundSensitive = true;
+        continue;
+      }
+      // Recursively clean nested objects
+      const [cleanedValue, hadSensitive] = removeSensitiveKeys(value);
+      if (hadSensitive) foundSensitive = true;
+      cleaned[key] = cleanedValue;
+    }
+    return [cleaned, foundSensitive];
+  }
+
+  return [obj, false];
+}
+
 export const loadState = (): DashboardState => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      return { ...defaultState, ...JSON.parse(saved) };
+      const parsed = JSON.parse(saved);
+      
+      // Automatically remove sensitive data from old state
+      const [cleaned, hadSensitiveKeys] = removeSensitiveKeys(parsed);
+      
+      // Only write back if we actually removed sensitive keys
+      // This avoids unnecessary localStorage writes on every load
+      if (hadSensitiveKeys) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
+      }
+      
+      // Validate that cleaned is an object before merging
+      // This guard protects against corrupted localStorage data or edge cases
+      // where removeSensitiveKeys might return a non-object type
+      const cleanedState = cleaned && typeof cleaned === 'object' && !Array.isArray(cleaned)
+        ? cleaned
+        : {};
+      
+      return { ...defaultState, ...cleanedState } as DashboardState;
     }
   } catch (error) {
     console.error('Failed to load state:', error);
@@ -51,7 +115,9 @@ export const loadState = (): DashboardState => {
 
 export const saveState = (state: DashboardState): void => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    // Remove sensitive keys before saving to prevent accidental storage
+    const [cleaned] = removeSensitiveKeys(state);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
   } catch (error) {
     console.error('Failed to save state:', error);
   }
