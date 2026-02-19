@@ -1,10 +1,19 @@
 import type { WidgetConfig, WeatherSettings, GithubSettings, TodoSettings } from '../types';
 import { CANVAS_WIDTH } from '../constants/index';
+import type { WeatherData } from './weather';
+import { getWeatherEmoji } from './weather';
+import type { GithubData } from './github';
 
 // Fixed padding for all widgets (no size variants)
 const WIDGET_PADDING = 8;
 const FONT_SIZE = 11;
 const TITLE_FONT_SIZE = 12;
+
+// Optional live data that can be passed to renderer
+export interface RenderData {
+  weather?: Record<string, WeatherData>;
+  github?: Record<string, GithubData>;
+}
 
 /**
  * Estimate the height needed to render a widget
@@ -70,7 +79,8 @@ export const renderWidgetToCanvas = (
   x: number,
   y: number,
   width: number,
-  height: number
+  height: number,
+  liveData?: RenderData
 ): void => {
   // Draw widget border
   ctx.strokeStyle = '#000000';
@@ -91,10 +101,10 @@ export const renderWidgetToCanvas = (
 
   switch (widget.type) {
     case 'weather':
-      renderWeatherWidget(ctx, widget, innerX, innerY, innerWidth);
+      renderWeatherWidget(ctx, widget, innerX, innerY, innerWidth, liveData);
       break;
     case 'github':
-      renderGithubWidget(ctx, widget, innerX, innerY, innerWidth, height - WIDGET_PADDING * 2);
+      renderGithubWidget(ctx, widget, innerX, innerY, innerWidth, height - WIDGET_PADDING * 2, liveData);
       break;
     case 'todo':
       renderTodoWidget(ctx, widget, innerX, innerY, innerWidth);
@@ -110,7 +120,8 @@ const renderWeatherWidget = (
   widget: WidgetConfig,
   x: number,
   y: number,
-  _width: number
+  _width: number,
+  liveData?: RenderData
 ): void => {
   const settings = widget.settings as WeatherSettings;
   
@@ -118,14 +129,36 @@ const renderWeatherWidget = (
   ctx.font = `bold ${TITLE_FONT_SIZE}px sans-serif`;
   ctx.fillText('天気', x, y);
   
-  // Location name
-  ctx.font = `${FONT_SIZE}px sans-serif`;
-  const locationName = settings.locationName || '設定中';
-  ctx.fillText(`地域: ${locationName}`, x, y + TITLE_FONT_SIZE + 4);
+  // Get weather data if available
+  const weatherKey = settings.locationCode || '130000';
+  const weatherData = liveData?.weather?.[weatherKey];
   
-  // Note: Live weather data is not available in canvas context
-  // This is a limitation that should be addressed by passing weather data to ImageGenerator
-  // For now, showing placeholder to maintain layout consistency
+  if (weatherData) {
+    // Line 1: Location name
+    const locationName = weatherData.locationName || settings.locationName || '設定中';
+    ctx.font = `${FONT_SIZE}px sans-serif`;
+    ctx.fillText(`地域: ${locationName}`, x, y + TITLE_FONT_SIZE + 4);
+    
+    // Line 2: Emoji and temperatures
+    const emoji = getWeatherEmoji(weatherData.condition);
+    ctx.font = `${FONT_SIZE + 4}px sans-serif`;
+    ctx.fillText(emoji, x, y + TITLE_FONT_SIZE + FONT_SIZE + 8);
+    
+    // Temperature display with max/min
+    // Derive min/max from single temperature (±2°C fallback)
+    const temp = weatherData.temperature;
+    const maxTemp = temp + 2;
+    const minTemp = temp - 2;
+    
+    ctx.font = `${FONT_SIZE}px sans-serif`;
+    const tempText = `最高: ${maxTemp}°C / 最低: ${minTemp}°C`;
+    ctx.fillText(tempText, x + 20, y + TITLE_FONT_SIZE + FONT_SIZE + 10);
+  } else {
+    // Fallback: show location only
+    ctx.font = `${FONT_SIZE}px sans-serif`;
+    const locationName = settings.locationName || '設定中';
+    ctx.fillText(`地域: ${locationName}`, x, y + TITLE_FONT_SIZE + 4);
+  }
 };
 
 const renderGithubWidget = (
@@ -134,7 +167,8 @@ const renderGithubWidget = (
   x: number,
   y: number,
   width: number,
-  _height: number
+  _height: number,
+  liveData?: RenderData
 ): void => {
   const settings = widget.settings as GithubSettings;
   
@@ -148,8 +182,11 @@ const renderGithubWidget = (
   const rangeText = `${settings.range || 30}日間`;
   ctx.fillText(rangeText, x, y + TITLE_FONT_SIZE + 3);
   
+  // Get GitHub data if available
+  const githubKey = settings.username || '';
+  const githubData = liveData?.github?.[githubKey];
+  
   // Render grass visualization (horizontal chronological blocks with wrapping)
-  // All cells shown as empty (level 0) until contribution data is provided
   const grassY = y + TITLE_FONT_SIZE + FONT_SIZE + 8;
   const cellSize = 4;
   const cellGap = 1;
@@ -170,8 +207,8 @@ const renderGithubWidget = (
     const cellX = x + col * (cellSize + cellGap);
     const cellY = grassY + row * (cellSize + cellGap);
     
-    // Mock contribution level (0-4) - ALWAYS 0 until live data is passed
-    const level = 0;
+    // Use live data if available, otherwise show empty cells
+    const level = githubData?.contributions?.[i]?.level ?? 0;
     
     const color = getGrassColor(level);
     ctx.fillStyle = color;
