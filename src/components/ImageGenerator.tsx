@@ -1,13 +1,18 @@
 import { useRef, useEffect, useState } from 'react';
+import type { WidgetConfig } from '../types';
 import { JAPANESE_LABELS, CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants';
 import { downloadCanvas } from '../utils/renderer';
+import { renderWidgetToCanvas, estimateWidgetHeight } from '../utils/widgetRenderer';
 
 interface ImageGeneratorProps {
-  dashboardRef: React.RefObject<HTMLDivElement>;
+  widgets: WidgetConfig[];
   onClose: () => void;
 }
 
-export const ImageGenerator: React.FC<ImageGeneratorProps> = ({ dashboardRef, onClose }) => {
+export const ImageGenerator: React.FC<ImageGeneratorProps> = ({ 
+  widgets, 
+  onClose 
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [generating, setGenerating] = useState(false);
 
@@ -17,7 +22,7 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({ dashboardRef, on
   }, []);
 
   const generateImage = async () => {
-    if (!canvasRef.current || !dashboardRef.current) return;
+    if (!canvasRef.current) return;
 
     setGenerating(true);
 
@@ -30,31 +35,26 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({ dashboardRef, on
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-      // Set up rendering
-      ctx.fillStyle = '#000000';
-      ctx.font = 'bold 14px sans-serif';
+      // Filter enabled widgets and sort by order
+      const enabledWidgets = widgets
+        .filter(w => w.enabled)
+        .sort((a, b) => a.order - b.order);
 
-      // Simple text-based rendering
-      const widgets = dashboardRef.current.querySelectorAll('[data-widget]');
-      let yOffset = 10;
+      // Calculate total content height to center vertically
+      const widgetSpacing = 6;
+      const widgetHeights = enabledWidgets.map(w => estimateWidgetHeight(w));
+      
+      const totalContentHeight = widgetHeights.reduce((sum, h) => sum + h, 0) 
+        + (widgetHeights.length - 1) * widgetSpacing;
+      
+      // Center vertically in 296x128 canvas
+      let yOffset = Math.max(10, (CANVAS_HEIGHT - totalContentHeight) / 2);
 
-      widgets.forEach((widget) => {
-        const text = widget.textContent || '';
-        const lines = text.split('\n').filter(l => l.trim());
-        
-        lines.forEach((line, index) => {
-          if (yOffset < CANVAS_HEIGHT - 20) {
-            if (index === 0) {
-              ctx.font = 'bold 14px sans-serif';
-            } else {
-              ctx.font = '12px sans-serif';
-            }
-            ctx.fillText(line.trim().substring(0, 50), 10, yOffset);
-            yOffset += 16;
-          }
-        });
-        
-        yOffset += 10;
+      // Render each widget using dedicated renderer
+      enabledWidgets.forEach((widget, index) => {
+        const height = widgetHeights[index];
+        renderWidgetToCanvas(ctx, widget, 10, yOffset, CANVAS_WIDTH - 20, height);
+        yOffset += height + widgetSpacing;
       });
     } catch (error) {
       console.error('Image generation error:', error);
