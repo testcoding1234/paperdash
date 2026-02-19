@@ -4,7 +4,9 @@ export interface WeatherData {
   locationName: string;
 }
 
-// Map weather conditions to emojis
+// Approximation offset for deriving max/min temperature from single current temperature value
+// JMA API returns only current temperature; this provides a reasonable range estimate
+export const TEMP_VARIANCE = 2;
 const WEATHER_EMOJI_MAP: Array<{ keywords: string[]; emoji: string }> = [
   { keywords: ['晴', 'sunny', 'clear'], emoji: '☀️' },
   { keywords: ['曇', 'cloud'], emoji: '☁️' },
@@ -54,7 +56,7 @@ export const fetchWeather = async (locationCode: string): Promise<WeatherData> =
     const tempArea = data[0]?.timeSeries[2];
     
     const weatherData: WeatherData = {
-      temperature: tempArea?.areas[0]?.temps[0] || 0,
+      temperature: parseFloat(tempArea?.areas[0]?.temps[0] ?? '0') || 0,
       condition: area?.areas[0]?.weathers[0] || '不明',
       locationName: area?.areas[0]?.area?.name || '不明',
     };

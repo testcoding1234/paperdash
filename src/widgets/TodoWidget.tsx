@@ -7,24 +7,15 @@ export const TodoWidget: React.FC<WidgetProps> = ({ config }) => {
     <div className="border-2 border-black bg-white p-4 text-base">
       <div className="font-bold mb-2">To-Do</div>
       
-      <div className="space-y-1">
-        {settings.items.map((item) => (
-          <div key={item.id} className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={item.completed}
-              readOnly
-              aria-disabled="true"
-              aria-label={`${item.text} (表示専用)`}
-              className="w-4 h-4 cursor-default"
-            />
-            <span className={item.completed ? 'line-through opacity-50' : ''}>
-              {item.text}
-            </span>
-          </div>
+      <div className="flex flex-wrap">
+        {settings.items.map((item, index) => (
+          <span key={item.id} className="whitespace-nowrap">
+            {item.completed ? '☑' : '☐'}{item.text}
+            {index < settings.items.length - 1 ? '\u3000' : ''}
+          </span>
         ))}
         {settings.items.length === 0 && (
-          <div className="text-sm text-gray-500">タスクがありません</div>
+          <span className="text-sm text-gray-500">タスクがありません</span>
         )}
       </div>
     </div>
