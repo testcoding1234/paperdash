@@ -18,7 +18,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
     .filter((w) => w.enabled)
     .sort((a, b) => a.order - b.order);
 
-  // E-paper optimized: single column layout with consistent spacing
+  // E-paper optimized: fixed layout without responsive breakpoints
   const layoutClass = layout === '2-column' 
     ? 'grid grid-cols-2 gap-3' 
     : 'flex flex-col gap-3';
