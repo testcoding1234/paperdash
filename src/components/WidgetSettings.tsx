@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import type { WidgetConfig, WeatherSettings, GithubSettings } from '../types';
+import type { WidgetConfig, WeatherSettings, GithubSettings, TodoSettings } from '../types';
 import { JAPANESE_LABELS, WEATHER_LOCATIONS } from '../constants';
+import { TodoEditor } from './TodoEditor';
 
 interface WidgetSettingsProps {
   widget: WidgetConfig;
@@ -96,6 +97,16 @@ export const WidgetSettings: React.FC<WidgetSettingsProps> = ({
     );
   };
 
+  const renderTodoSettings = () => {
+    const todoSettings = settings as TodoSettings;
+    return (
+      <TodoEditor
+        settings={todoSettings}
+        onUpdate={(updatedSettings) => setSettings(updatedSettings)}
+      />
+    );
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white border-4 border-black max-w-md w-full p-6">
@@ -106,11 +117,7 @@ export const WidgetSettings: React.FC<WidgetSettingsProps> = ({
         <div className="mb-6">
           {widget.type === 'weather' && renderWeatherSettings()}
           {widget.type === 'github' && renderGithubSettings()}
-          {widget.type === 'todo' && (
-            <div className="text-sm text-gray-600">
-              To-Doウィジェットには設定項目がありません
-            </div>
-          )}
+          {widget.type === 'todo' && renderTodoSettings()}
         </div>
 
         <div className="flex gap-4">
