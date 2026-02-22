@@ -12,19 +12,18 @@ PaperDash is a Japanese-language minimal dashboard web application that allows u
 
 ### Modular Widget System
 - **WeatherWidget**: Japan Meteorological Agency (JMA) weather integration
-- **GithubGrassWidget**: GitHub contribution graph (7-day or 30-day view)
+- **GithubGrassWidget**: GitHub contribution graph (7-day view)
 - **TodoWidget**: Local storage-based task manager
 
 Each widget is:
 - Toggleable (on/off)
-- Resizable (S / M / L)
-- Reorderable using UP/DOWN buttons
+- Reorderable using LEFT/RIGHT buttons
 
 ### Dashboard Editor
 - Mobile-first, minimal Japanese UX
 - Widget list panel with reordering controls
-- Size selector and settings for each widget
-- Layout toggle: 1-column (default) or 2-column mode
+- Settings for each widget
+- Layout toggle: 2-column mode(2Columns,1record designs)
 - Add widget functionality
 
 ### E-Paper Image Export
@@ -37,7 +36,7 @@ Each widget is:
 - Weather location selector (Tokyo, Nagoya, Osaka, custom code)
 - GitHub username and optional Personal Access Token (stored locally)
 - Default layout preferences
-- Contribution graph range toggle (7/30 days)
+- Contribution graph range toggle (7days)
 
 ## Technical Stack
 
