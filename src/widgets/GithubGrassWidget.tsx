@@ -19,7 +19,7 @@ export const GithubGrassWidget: React.FC<WidgetProps> = ({ config }) => {
       setLoading(true);
       const result = await fetchGithubContributions(
         settings.username,
-        settings.range || 30
+        settings.range || 7
       );
       setData(result);
       setLoading(false);

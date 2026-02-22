@@ -9,10 +9,10 @@ const WIDGET_PADDING = 8;
 const FONT_SIZE = 11;
 const TITLE_FONT_SIZE = 12;
 
-// Compute font sizes from scale, enforcing readable minimums
+// Compute font sizes from scale, enforcing readable minimums (10px body, 11px title)
 const getScaledFonts = (fontScale: number = 1) => ({
-  fontSize: Math.max(6, Math.floor(FONT_SIZE * fontScale)),
-  titleFontSize: Math.max(7, Math.floor(TITLE_FONT_SIZE * fontScale)),
+  fontSize: Math.max(10, Math.floor(FONT_SIZE * fontScale)),
+  titleFontSize: Math.max(11, Math.floor(TITLE_FONT_SIZE * fontScale)),
 });
 
 // Optional live data that can be passed to renderer
@@ -43,8 +43,8 @@ export const estimateWidgetHeight = (widget: WidgetConfig, fontScale: number = 1
 
 const estimateWeatherHeight = (fontScale: number = 1): number => {
   const { fontSize, titleFontSize } = getScaledFonts(fontScale);
-  // Title+location (one combined line) + emoji/temp line + padding
-  return WIDGET_PADDING * 2 + titleFontSize + 4 + (fontSize + 4);
+  // Title line + emoji/condition line + temp line + padding
+  return WIDGET_PADDING * 2 + titleFontSize + 4 + (fontSize + 4) + 4 + (fontSize + 4);
 };
 
 const estimateGithubHeight = (widget: WidgetConfig, fontScale: number = 1): number => {
@@ -58,9 +58,8 @@ const estimateGithubHeight = (widget: WidgetConfig, fontScale: number = 1): numb
   const CANVAS_HORIZONTAL_MARGINS = 20;
   const availableWidth = CANVAS_WIDTH - CANVAS_HORIZONTAL_MARGINS - (WIDGET_PADDING * 2);
   const maxCellsPerRow = Math.floor(availableWidth / (cellSize + cellGap));
-  const daysToShow = settings.range || 30;
+  const daysToShow = settings.range || 7;
   // Cap at 2 rows maximum to fit e-paper display (296x128) constraint
-  // Prevents canvas overflow when showing 30-day range
   const numberOfRows = Math.min(2, Math.ceil(daysToShow / maxCellsPerRow));
   
   // Title + range text + grass grid
@@ -146,22 +145,22 @@ const renderWeatherWidget = (
   ctx.fillText(`天気\u3000${locationName}`, x, y);
   
   if (weatherData) {
-    // Line 2: Emoji and temperatures on the same row
+    // Line 2: Emoji and condition
     const emoji = getWeatherEmoji(weatherData.condition);
     ctx.font = `${fontSize + 4}px sans-serif`;
     ctx.fillText(emoji, x, y + titleFontSize + 4);
     
-    // Temperature display with max/min
-    // Note: JMA API returns single temperature value
-    // Derive min/max using ±TEMP_VARIANCE°C approximation for e-paper display
-    // This provides useful range estimate without additional API calls
-    const temp = weatherData.temperature;
+    ctx.font = `${fontSize}px sans-serif`;
+    ctx.fillText(weatherData.condition, x + 22, y + titleFontSize + 6);
+    
+    // Line 3: Temperature (max/min) using explicit Number() to prevent string concatenation
+    // Bug fix: JMA API temps array may contain strings; Number() ensures numeric addition
+    const temp = Number(weatherData.temperature);
     const maxTemp = temp + TEMP_VARIANCE;
     const minTemp = temp - TEMP_VARIANCE;
     
-    ctx.font = `${fontSize}px sans-serif`;
-    const tempText = `最高: ${maxTemp}°C / 最低: ${minTemp}°C`;
-    ctx.fillText(tempText, x + 20, y + titleFontSize + 6);
+    const tempText = `最高${maxTemp}°C 最低${minTemp}°C`;
+    ctx.fillText(tempText, x, y + titleFontSize + 4 + (fontSize + 4) + 4);
   }
 };
 
@@ -185,7 +184,7 @@ const renderGithubWidget = (
   
   // Range text — monospace for consistent character widths
   ctx.font = `${fontSize}px monospace`;
-  const rangeText = `${settings.range || 30}日間`;
+  const rangeText = `${settings.range || 7}日間`;
   ctx.fillText(rangeText, x, y + titleFontSize + 3);
   
   // Get GitHub data if available
@@ -199,7 +198,7 @@ const renderGithubWidget = (
   
   // Calculate how many cells fit per row
   const maxCellsPerRow = Math.floor(width / (cellSize + cellGap));
-  const daysToShow = settings.range || 30;
+  const daysToShow = settings.range || 7;
   
   // Render cells horizontally, wrapping to next row when needed
   // Maximum 2 rows for e-paper display

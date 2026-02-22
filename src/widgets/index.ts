@@ -11,7 +11,7 @@ export const WIDGET_REGISTRY = {
   github: {
     component: GithubGrassWidget,
     name: 'GitHub',
-    defaultSettings: { username: '', range: 30 },
+    defaultSettings: { username: '', range: 7 },
   },
   todo: {
     component: TodoWidget,

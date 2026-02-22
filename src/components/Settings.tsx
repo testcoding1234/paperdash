@@ -60,28 +60,7 @@ export const Settings: React.FC<SettingsProps> = ({ state, onUpdate, onClose }) 
             <label className="block font-bold mb-2">
               {JAPANESE_LABELS.grassRange}
             </label>
-            <div className="flex gap-4">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  value="7"
-                  checked={settings.grassRange === 7}
-                  onChange={() => setSettings({ ...settings, grassRange: 7 })}
-                  className="mr-2"
-                />
-                {JAPANESE_LABELS.days7}
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  value="30"
-                  checked={settings.grassRange === 30}
-                  onChange={() => setSettings({ ...settings, grassRange: 30 })}
-                  className="mr-2"
-                />
-                {JAPANESE_LABELS.days30}
-              </label>
-            </div>
+            <div className="text-sm text-gray-600">7日間</div>
           </div>
         </div>
 

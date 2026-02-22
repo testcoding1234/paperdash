@@ -35,8 +35,8 @@ export const WeatherWidget: React.FC<WidgetProps> = ({ config }) => {
       <div className="flex items-center gap-2">
         <span className="text-3xl">{getWeatherEmoji(weather?.condition || '')}</span>
         <div>
-          <div className="text-sm">最高: {(weather?.temperature ?? 0) + TEMP_VARIANCE}°C / 最低: {(weather?.temperature ?? 0) - TEMP_VARIANCE}°C</div>
           <div className="text-sm">{weather?.condition}</div>
+          <div className="text-sm">最高{Number(weather?.temperature ?? 0) + TEMP_VARIANCE}°C 最低{Number(weather?.temperature ?? 0) - TEMP_VARIANCE}°C</div>
         </div>
       </div>
     </div>

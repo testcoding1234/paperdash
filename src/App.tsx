@@ -1,14 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import type { DashboardState, WidgetConfig } from './types';
 import { loadState, saveState, updateWidget, moveWidget, addWidget, deleteWidget } from './utils/storage';
 import { WIDGET_REGISTRY } from './widgets';
 import { JAPANESE_LABELS } from './constants';
-import { Dashboard } from './components/Dashboard';
 import { WidgetList } from './components/WidgetList';
 import { Settings } from './components/Settings';
 import { WidgetSettings } from './components/WidgetSettings';
 import { AddWidget } from './components/AddWidget';
 import { ImageGenerator } from './components/ImageGenerator';
+import { CanvasPreview } from './components/CanvasPreview';
 
 function App() {
   const [state, setState] = useState<DashboardState>(loadState());
@@ -16,7 +16,6 @@ function App() {
   const [showAddWidget, setShowAddWidget] = useState(false);
   const [showImageGenerator, setShowImageGenerator] = useState(false);
   const [editingWidget, setEditingWidget] = useState<string | null>(null);
-  const dashboardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     saveState(state);
@@ -107,12 +106,7 @@ function App() {
           <div>
             <div className="border-4 border-black bg-white p-4">
               <h3 className="font-bold text-lg mb-4">プレビュー</h3>
-              <div ref={dashboardRef}>
-                <Dashboard
-                  widgets={state.widgets}
-                  onWidgetUpdate={handleWidgetUpdate}
-                />
-              </div>
+              <CanvasPreview widgets={state.widgets} />
             </div>
           </div>
         </div>
