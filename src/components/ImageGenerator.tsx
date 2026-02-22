@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import type { WidgetConfig } from '../types';
 import { JAPANESE_LABELS, CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants';
 import { downloadCanvas } from '../utils/renderer';
-import { renderWidgetToCanvas, estimateWidgetHeight, type RenderData } from '../utils/widgetRenderer';
+import { renderWidgetToCanvas, type RenderData } from '../utils/widgetRenderer';
 import { fetchWeather } from '../utils/weather';
 import { fetchGithubContributions } from '../utils/github';
 import type { WeatherSettings, GithubSettings } from '../types';
@@ -38,10 +38,11 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-      // Filter enabled widgets and sort by order
+      // Filter enabled widgets and sort by order, take first 2 for 2-column layout
       const enabledWidgets = widgets
         .filter(w => w.enabled)
-        .sort((a, b) => a.order - b.order);
+        .sort((a, b) => a.order - b.order)
+        .slice(0, 2);
 
       // Fetch live data for weather and github widgets
       const liveData: RenderData = {
@@ -72,7 +73,7 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
           const username = settings.username;
           if (username) {
             try {
-              const data = await fetchGithubContributions(username, settings.range || 30);
+              const data = await fetchGithubContributions(username, settings.range || 7);
               liveData.github![username] = data;
             } catch (error) {
               console.error('Failed to fetch GitHub data for', username, error);
@@ -81,50 +82,17 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
         })
       );
 
-      // Calculate total content height to center vertically
-      const widgetSpacing = 6;
-      const maxContentHeight = CANVAS_HEIGHT - 16; // Leave 8px margin top and bottom
-      let currentSpacing = widgetSpacing;
-      let fontScale = 1;
+      // 2-column layout: each widget gets half the canvas width, full canvas height
+      const COL_GAP = 6;
+      const MARGIN_H = 10;
+      const MARGIN_V = 8;
+      const colWidth = Math.floor((CANVAS_WIDTH - MARGIN_H * 2 - COL_GAP) / 2);
+      const widgetHeight = CANVAS_HEIGHT - MARGIN_V * 2;
 
-      // Initial height estimate with default font scale
-      let widgetHeights = enabledWidgets.map(w => estimateWidgetHeight(w, fontScale));
-      let totalContentHeight = widgetHeights.reduce((sum, h) => sum + h, 0)
-        + Math.max(0, (widgetHeights.length - 1)) * currentSpacing;
-
-      // CRITICAL: Prevent canvas overflow
-      // Step 1: Try reducing spacing first
-      if (totalContentHeight > maxContentHeight && widgetHeights.length > 1) {
-        const minSpacing = 2;
-        currentSpacing = Math.max(
-          minSpacing,
-          Math.floor((maxContentHeight - widgetHeights.reduce((sum, h) => sum + h, 0)) / (widgetHeights.length - 1))
-        );
-        totalContentHeight = widgetHeights.reduce((sum, h) => sum + h, 0) + (widgetHeights.length - 1) * currentSpacing;
-      }
-
-      // Step 2: If still too tall, reduce font scale so everything fits on one page
-      if (totalContentHeight > maxContentHeight) {
-        const MIN_FONT_SCALE = 0.6;
-        do {
-          fontScale = Math.max(MIN_FONT_SCALE, fontScale - 0.05);
-          widgetHeights = enabledWidgets.map(w => estimateWidgetHeight(w, fontScale));
-          totalContentHeight = widgetHeights.reduce((sum, h) => sum + h, 0)
-            + Math.max(0, (widgetHeights.length - 1)) * currentSpacing;
-        } while (totalContentHeight > maxContentHeight && fontScale > MIN_FONT_SCALE);
-      }
-
-      // Center vertically in 296x128 canvas with minimum 8px margin
-      let yOffset = Math.max(8, (CANVAS_HEIGHT - totalContentHeight) / 2);
-
-      // Render each widget using dedicated renderer with live data
+      // Render each widget in its column
       enabledWidgets.forEach((widget, index) => {
-        const height = widgetHeights[index];
-        // Only render if there's room (prevent overflow)
-        if (yOffset + height <= CANVAS_HEIGHT - 8) {
-          renderWidgetToCanvas(ctx, widget, 10, yOffset, CANVAS_WIDTH - 20, height, liveData, fontScale);
-          yOffset += height + currentSpacing;
-        }
+        const x = MARGIN_H + index * (colWidth + COL_GAP);
+        renderWidgetToCanvas(ctx, widget, x, MARGIN_V, colWidth, widgetHeight, liveData);
       });
     } catch (error) {
       console.error('Image generation error:', error);

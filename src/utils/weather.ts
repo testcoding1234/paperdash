@@ -55,8 +55,13 @@ export const fetchWeather = async (locationCode: string): Promise<WeatherData> =
     const area = data[0]?.timeSeries[0];
     const tempArea = data[0]?.timeSeries[2];
     
+    // Find first non-empty temperature value from the temps array
+    // JMA API sometimes has empty string ("") for the first temp entry
+    const rawTemps: string[] = tempArea?.areas[0]?.temps ?? [];
+    const tempStr = rawTemps.find((t: string) => t !== '' && t !== '--') ?? '0';
+    
     const weatherData: WeatherData = {
-      temperature: parseFloat(tempArea?.areas[0]?.temps[0] ?? '0') || 0,
+      temperature: parseFloat(tempStr) || 0,
       condition: area?.areas[0]?.weathers[0] || '不明',
       locationName: area?.areas[0]?.area?.name || '不明',
     };
