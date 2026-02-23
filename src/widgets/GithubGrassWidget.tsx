@@ -30,18 +30,18 @@ export const GithubGrassWidget: React.FC<WidgetProps> = ({ config }) => {
 
   if (!settings.username) {
     return (
-      <div className="border-2 border-black bg-white p-4">
-        <div className="font-bold mb-1">GitHub</div>
-        <div className="text-sm">ユーザー名を設定してください</div>
+      <div className="border-2 border-black bg-white p-4 md:p-6">
+        <div className="font-bold mb-1 text-base md:text-lg lg:text-xl">GitHub</div>
+        <div className="text-sm md:text-base">ユーザー名を設定してください</div>
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="border-2 border-black bg-white p-4">
-        <div className="font-bold mb-1">GitHub - {settings.username}</div>
-        <div className="text-sm">読み込み中...</div>
+      <div className="border-2 border-black bg-white p-4 md:p-6">
+        <div className="font-bold mb-1 text-base md:text-lg lg:text-xl">GitHub - {settings.username}</div>
+        <div className="text-sm md:text-base">読み込み中...</div>
       </div>
     );
   }
@@ -49,9 +49,9 @@ export const GithubGrassWidget: React.FC<WidgetProps> = ({ config }) => {
   // Display error if data fetch failed
   if (data?.error) {
     return (
-      <div className="border-2 border-black bg-white p-4">
-        <div className="font-bold mb-1">GitHub - {settings.username}</div>
-        <div className="text-sm text-red-600">{data.error}</div>
+      <div className="border-2 border-black bg-white p-4 md:p-6">
+        <div className="font-bold mb-1 text-base md:text-lg lg:text-xl">GitHub - {settings.username}</div>
+        <div className="text-sm md:text-base text-red-600">{data.error}</div>
       </div>
     );
   }
@@ -65,16 +65,16 @@ export const GithubGrassWidget: React.FC<WidgetProps> = ({ config }) => {
   };
 
   return (
-    <div className="border-2 border-black bg-white p-4">
-      <div className="font-bold mb-2">GitHub - {settings.username}</div>
-      <div className="text-xs mb-2">{settings.range}日間: {data?.totalContributions} contributions</div>
+    <div className="border-2 border-black bg-white p-4 md:p-6">
+      <div className="font-bold mb-2 text-base md:text-lg lg:text-xl">GitHub - {settings.username}</div>
+      <div className="text-xs md:text-sm lg:text-base mb-2">{settings.range}日間: {data?.totalContributions} contributions</div>
       
       {/* Horizontal grass layout (left to right by date, wrapping rows) */}
-      <div className="flex flex-wrap gap-0.5">
+      <div className="flex flex-wrap gap-0.5 md:gap-1">
         {(data?.contributions || []).map((day, index) => (
           <div
             key={index}
-            className={`w-3 h-3 ${getColor(day.level)}`}
+            className={`w-3 h-3 md:w-4 md:h-4 lg:w-5 lg:h-5 ${getColor(day.level)}`}
             title={`${day.date}: ${day.count}`}
             aria-label={`${day.date}: ${day.count} contributions`}
           />
