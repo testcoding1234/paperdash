@@ -72,26 +72,7 @@ export const WidgetSettings: React.FC<WidgetSettingsProps> = ({
           <label className="block font-bold mb-2">
             {JAPANESE_LABELS.range}
           </label>
-          <div className="flex gap-4">
-            <label className="flex items-center">
-              <input
-                type="radio"
-                checked={githubSettings.range === 7}
-                onChange={() => setSettings({ ...githubSettings, range: 7 })}
-                className="mr-2"
-              />
-              {JAPANESE_LABELS.days7}
-            </label>
-            <label className="flex items-center">
-              <input
-                type="radio"
-                checked={githubSettings.range === 30}
-                onChange={() => setSettings({ ...githubSettings, range: 30 })}
-                className="mr-2"
-              />
-              {JAPANESE_LABELS.days30}
-            </label>
-          </div>
+          <div className="text-sm text-gray-600">{JAPANESE_LABELS.days7}</div>
         </div>
       </div>
     );

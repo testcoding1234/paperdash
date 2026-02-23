@@ -16,7 +16,7 @@ const defaultState: DashboardState = {
       type: 'github',
       enabled: true,
       order: 1,
-      settings: { username: '', range: 30 },
+      settings: { username: '', range: 7 },
     },
     {
       id: 'todo-default',
@@ -29,7 +29,7 @@ const defaultState: DashboardState = {
   settings: {
     defaultLocation: '130000',
     githubUsername: '',
-    grassRange: 30,
+    grassRange: 7,
   },
 };
 

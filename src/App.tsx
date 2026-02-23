@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import type { DashboardState, WidgetConfig } from './types';
 import { loadState, saveState, updateWidget, moveWidget, addWidget, deleteWidget } from './utils/storage';
 import { WIDGET_REGISTRY } from './widgets';
@@ -9,6 +9,7 @@ import { Settings } from './components/Settings';
 import { WidgetSettings } from './components/WidgetSettings';
 import { AddWidget } from './components/AddWidget';
 import { ImageGenerator } from './components/ImageGenerator';
+import { CanvasPreview } from './components/CanvasPreview';
 
 function App() {
   const [state, setState] = useState<DashboardState>(loadState());
@@ -16,7 +17,6 @@ function App() {
   const [showAddWidget, setShowAddWidget] = useState(false);
   const [showImageGenerator, setShowImageGenerator] = useState(false);
   const [editingWidget, setEditingWidget] = useState<string | null>(null);
-  const dashboardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     saveState(state);
@@ -59,8 +59,8 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex justify-center p-4">
-      <div className="w-full max-w-lg mx-auto">
+    <div className="min-h-screen bg-white p-4">
+      <div className="w-full">
         {/* Header */}
         <div className="mb-4 border-4 border-black bg-white p-4">
           <div className="flex items-center justify-between gap-4 mb-4">
@@ -103,16 +103,22 @@ function App() {
             />
           </div>
 
-          {/* Dashboard preview */}
+          {/* Widget display (HTML components — responsive) */}
           <div>
             <div className="border-4 border-black bg-white p-4">
-              <h3 className="font-bold text-lg mb-4">プレビュー</h3>
-              <div ref={dashboardRef}>
-                <Dashboard
-                  widgets={state.widgets}
-                  onWidgetUpdate={handleWidgetUpdate}
-                />
-              </div>
+              <h3 className="font-bold text-lg md:text-xl mb-4">ウィジェット</h3>
+              <Dashboard
+                widgets={state.widgets}
+                onWidgetUpdate={handleWidgetUpdate}
+              />
+            </div>
+          </div>
+
+          {/* Dashboard preview (accurate e-paper canvas) */}
+          <div>
+            <div className="border-4 border-black bg-white p-4">
+              <h3 className="font-bold text-lg md:text-xl mb-4">プレビュー</h3>
+              <CanvasPreview widgets={state.widgets} />
             </div>
           </div>
         </div>

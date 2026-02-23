@@ -22,21 +22,21 @@ export const WeatherWidget: React.FC<WidgetProps> = ({ config }) => {
 
   if (loading) {
     return (
-      <div className="border-2 border-black bg-white p-4 text-base">
-        <div className="font-bold mb-1">天気</div>
-        <div className="text-sm">読み込み中...</div>
+      <div className="border-2 border-black bg-white p-4 md:p-6">
+        <div className="font-bold mb-1 text-base md:text-lg lg:text-xl">天気</div>
+        <div className="text-sm md:text-base">読み込み中...</div>
       </div>
     );
   }
 
   return (
-    <div className="border-2 border-black bg-white p-4 text-base">
-      <div className="font-bold mb-1">{'天気\u3000'}{weather?.locationName}</div>
-      <div className="flex items-center gap-2">
-        <span className="text-3xl">{getWeatherEmoji(weather?.condition || '')}</span>
+    <div className="border-2 border-black bg-white p-4 md:p-6">
+      <div className="font-bold mb-1 text-base md:text-lg lg:text-xl">{'天気\u3000'}{weather?.locationName}</div>
+      <div className="flex items-center gap-2 md:gap-4">
+        <span className="text-3xl md:text-5xl lg:text-6xl">{getWeatherEmoji(weather?.condition || '')}</span>
         <div>
-          <div className="text-sm">最高: {(weather?.temperature ?? 0) + TEMP_VARIANCE}°C / 最低: {(weather?.temperature ?? 0) - TEMP_VARIANCE}°C</div>
-          <div className="text-sm">{weather?.condition}</div>
+          <div className="text-sm md:text-base lg:text-lg">{weather?.condition}</div>
+          <div className="text-sm md:text-base lg:text-lg">最高{Number(weather?.temperature ?? 0) + TEMP_VARIANCE}°C 最低{Number(weather?.temperature ?? 0) - TEMP_VARIANCE}°C</div>
         </div>
       </div>
     </div>

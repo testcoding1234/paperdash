@@ -1,4 +1,4 @@
-export type GrassRange = 7 | 30;
+export type GrassRange = 7;
 
 export interface WidgetConfig {
   id: string;
