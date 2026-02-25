@@ -4,6 +4,7 @@ import { CANVAS_WIDTH, CANVAS_HEIGHT } from '../constants';
 import { renderWidgetToCanvas, type RenderData } from '../utils/widgetRenderer';
 import { fetchWeather } from '../utils/weather';
 import { fetchGithubContributions } from '../utils/github';
+import { fetchTodayEvents } from '../utils/today';
 import type { WeatherSettings, GithubSettings } from '../types';
 
 // 2-column layout constants (must match ImageGenerator)
@@ -57,6 +58,12 @@ export const CanvasPreview: React.FC<CanvasPreviewProps> = ({ widgets }) => {
         }
       })
     );
+
+    if (enabledWidgets.some(w => w.type === 'today')) {
+      try {
+        liveData.today = await fetchTodayEvents();
+      } catch { /* fallback to empty */ }
+    }
 
     enabledWidgets.forEach((widget, i) => {
       const x = MARGIN_H + i * (COL_WIDTH + COL_GAP);

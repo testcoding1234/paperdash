@@ -5,6 +5,7 @@ import { downloadCanvas } from '../utils/renderer';
 import { renderWidgetToCanvas, type RenderData } from '../utils/widgetRenderer';
 import { fetchWeather } from '../utils/weather';
 import { fetchGithubContributions } from '../utils/github';
+import { fetchTodayEvents } from '../utils/today';
 import type { WeatherSettings, GithubSettings } from '../types';
 
 interface ImageGeneratorProps {
@@ -81,6 +82,16 @@ export const ImageGenerator: React.FC<ImageGeneratorProps> = ({
           }
         })
       );
+
+      // Fetch today data if any today widgets are enabled
+      const todayWidgets = enabledWidgets.filter(w => w.type === 'today');
+      if (todayWidgets.length > 0) {
+        try {
+          liveData.today = await fetchTodayEvents();
+        } catch (error) {
+          console.error('Failed to fetch today data', error);
+        }
+      }
 
       // 2-column layout: each widget gets half the canvas width, full canvas height
       const COL_GAP = 6;

@@ -3,6 +3,7 @@ import { CANVAS_WIDTH } from '../constants/index';
 import type { WeatherData } from './weather';
 import { getWeatherEmoji, TEMP_VARIANCE } from './weather';
 import type { GithubData } from './github';
+import type { TodayData } from './today';
 
 // Fixed padding for all widgets (no size variants)
 const WIDGET_PADDING = 8;
@@ -19,6 +20,7 @@ const getScaledFonts = (fontScale: number = 1) => ({
 export interface RenderData {
   weather?: Record<string, WeatherData>;
   github?: Record<string, GithubData>;
+  today?: TodayData;
 }
 
 /**
@@ -35,6 +37,8 @@ export const estimateWidgetHeight = (widget: WidgetConfig, fontScale: number = 1
       return estimateGithubHeight(widget, fontScale);
     case 'todo':
       return estimateTodoHeight(fontScale);
+    case 'today':
+      return estimateTodayHeight(fontScale);
     default:
       // Default fallback
       return 45;
@@ -71,6 +75,13 @@ const estimateTodoHeight = (fontScale: number = 1): number => {
   const lineHeight = fontSize + 4;
   // Title + up to 2 lines containing tasks joined with full-width spaces
   return WIDGET_PADDING * 2 + titleFontSize + 6 + lineHeight * 2;
+};
+
+const estimateTodayHeight = (fontScale: number = 1): number => {
+  const { fontSize, titleFontSize } = getScaledFonts(fontScale);
+  const lineHeight = fontSize + 4;
+  // Title + up to 3 event lines
+  return WIDGET_PADDING * 2 + titleFontSize + 6 + lineHeight * 3;
 };
 
 /**
@@ -114,6 +125,9 @@ export const renderWidgetToCanvas = (
       break;
     case 'todo':
       renderTodoWidget(ctx, widget, innerX, innerY, innerWidth, fontScale);
+      break;
+    case 'today':
+      renderTodayWidget(ctx, innerX, innerY, innerWidth, liveData, fontScale);
       break;
     default: {
       const { titleFontSize } = getScaledFonts(fontScale);
@@ -301,4 +315,40 @@ const renderTodoWidget = (
       ctx.fillText(line, x, contentY + index * lineHeight);
     });
   }
+};
+
+const renderTodayWidget = (
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  liveData?: RenderData,
+  fontScale: number = 1
+): void => {
+  const { fontSize, titleFontSize } = getScaledFonts(fontScale);
+  const lineHeight = fontSize + 4;
+
+  const todayData = liveData?.today;
+  const dateLabel = todayData?.date || '';
+
+  // Title line
+  ctx.font = `bold ${titleFontSize}px sans-serif`;
+  const title = dateLabel ? `今日は何の日\u3000${dateLabel}` : '今日は何の日';
+  ctx.fillText(title, x, y);
+
+  const contentY = y + titleFontSize + 6;
+  ctx.font = `${fontSize}px sans-serif`;
+
+  const events = todayData?.events || ['データなし'];
+
+  events.slice(0, 3).forEach((event, index) => {
+    const text = `・${event}`;
+    // Truncate if too wide
+    let displayText = text;
+    while (ctx.measureText(displayText).width > width && displayText.length > 2) {
+      displayText = displayText.slice(0, -1);
+    }
+    if (displayText !== text) displayText = displayText.slice(0, -1) + '…';
+    ctx.fillText(displayText, x, contentY + index * lineHeight);
+  });
 };
