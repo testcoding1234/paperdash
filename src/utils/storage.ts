@@ -9,7 +9,7 @@ const defaultState: DashboardState = {
       type: 'weather',
       enabled: true,
       order: 0,
-      settings: { locationCode: '130000', locationName: '東京' },
+      settings: { locationCode: '130000', locationName: '東京都' },
     },
     {
       id: 'github-default',

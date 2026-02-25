@@ -65,9 +65,9 @@ export const GithubGrassWidget: React.FC<WidgetProps> = ({ config }) => {
   };
 
   return (
-    <div className="border-2 border-black bg-white p-4 md:p-6">
-      <div className="font-bold mb-2 text-base md:text-lg lg:text-xl">GitHub - {settings.username}</div>
-      <div className="text-xs md:text-sm lg:text-base mb-2">{settings.range}日間: {data?.totalContributions} contributions</div>
+    <div className="border-2 border-black bg-white p-4 md:p-6 overflow-hidden">
+      <div className="font-bold mb-2 text-base md:text-lg lg:text-xl break-words">GitHub - {settings.username}</div>
+      <div className="text-xs md:text-sm lg:text-base mb-2 break-words">{settings.range}日間: {data?.totalContributions} contributions</div>
       
       {/* Horizontal grass layout (left to right by date, wrapping rows) */}
       <div className="flex flex-wrap gap-0.5 md:gap-1">

@@ -30,13 +30,13 @@ export const WeatherWidget: React.FC<WidgetProps> = ({ config }) => {
   }
 
   return (
-    <div className="border-2 border-black bg-white p-4 md:p-6">
-      <div className="font-bold mb-1 text-base md:text-lg lg:text-xl">{'天気\u3000'}{weather?.locationName}</div>
+    <div className="border-2 border-black bg-white p-4 md:p-6 overflow-hidden">
+      <div className="font-bold mb-1 text-base md:text-lg lg:text-xl break-words">{'天気\u3000'}{settings.locationName || weather?.locationName}</div>
       <div className="flex items-center gap-2 md:gap-4">
-        <span className="text-3xl md:text-5xl lg:text-6xl">{getWeatherEmoji(weather?.condition || '')}</span>
-        <div>
-          <div className="text-sm md:text-base lg:text-lg">{weather?.condition}</div>
-          <div className="text-sm md:text-base lg:text-lg">最高{Number(weather?.temperature ?? 0) + TEMP_VARIANCE}°C 最低{Number(weather?.temperature ?? 0) - TEMP_VARIANCE}°C</div>
+        <span className="text-3xl md:text-5xl lg:text-6xl flex-shrink-0">{getWeatherEmoji(weather?.condition || '')}</span>
+        <div className="overflow-hidden min-w-0">
+          <div className="text-sm md:text-base lg:text-lg break-words">{weather?.condition}</div>
+          <div className="text-sm md:text-base lg:text-lg break-words">最高{Number(weather?.temperature ?? 0) + TEMP_VARIANCE}°C 最低{Number(weather?.temperature ?? 0) - TEMP_VARIANCE}°C</div>
         </div>
       </div>
     </div>

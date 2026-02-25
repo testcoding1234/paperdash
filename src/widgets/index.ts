@@ -1,12 +1,13 @@
 import { WeatherWidget } from './WeatherWidget';
 import { GithubGrassWidget } from './GithubGrassWidget';
 import { TodoWidget } from './TodoWidget';
+import { TodayWidget } from './TodayWidget';
 
 export const WIDGET_REGISTRY = {
   weather: {
     component: WeatherWidget,
     name: '天気',
-    defaultSettings: { locationCode: '130000', locationName: '東京' },
+    defaultSettings: { locationCode: '130000', locationName: '東京都' },
   },
   github: {
     component: GithubGrassWidget,
@@ -17,6 +18,11 @@ export const WIDGET_REGISTRY = {
     component: TodoWidget,
     name: 'To-Do',
     defaultSettings: { items: [] },
+  },
+  today: {
+    component: TodayWidget,
+    name: '今日は何の日',
+    defaultSettings: {},
   },
 };
 
