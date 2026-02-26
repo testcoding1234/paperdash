@@ -16,6 +16,25 @@ const getScaledFonts = (fontScale: number = 1) => ({
   titleFontSize: Math.max(11, Math.floor(TITLE_FONT_SIZE * fontScale)),
 });
 
+// Draw text truncated with ellipsis if wider than maxWidth
+const fillTextTruncated = (
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number
+): void => {
+  if (ctx.measureText(text).width <= maxWidth) {
+    ctx.fillText(text, x, y);
+    return;
+  }
+  let truncated = text;
+  while (truncated.length > 1 && ctx.measureText(truncated + '…').width > maxWidth) {
+    truncated = truncated.slice(0, -1);
+  }
+  ctx.fillText(truncated + '…', x, y);
+};
+
 // Optional live data that can be passed to renderer
 export interface RenderData {
   weather?: Record<string, WeatherData>;
@@ -142,7 +161,7 @@ const renderWeatherWidget = (
   widget: WidgetConfig,
   x: number,
   y: number,
-  _width: number,
+  width: number,
   liveData?: RenderData,
   fontScale: number = 1
 ): void => {
@@ -152,11 +171,12 @@ const renderWeatherWidget = (
   // Get weather data if available
   const weatherKey = settings.locationCode || '130000';
   const weatherData = liveData?.weather?.[weatherKey];
-  const locationName = weatherData?.locationName || settings.locationName || '設定中';
+  // Use user-configured prefecture name first (matches HTML preview priority)
+  const locationName = settings.locationName || weatherData?.locationName || '設定中';
 
   // Line 1: Title + location combined into one line with full-width space
   ctx.font = `bold ${titleFontSize}px sans-serif`;
-  ctx.fillText(`天気\u3000${locationName}`, x, y);
+  fillTextTruncated(ctx, `天気\u3000${locationName}`, x, y, width);
   
   if (weatherData) {
     // Line 2: Emoji and condition
@@ -164,8 +184,9 @@ const renderWeatherWidget = (
     ctx.font = `${fontSize + 4}px sans-serif`;
     ctx.fillText(emoji, x, y + titleFontSize + 4);
     
+    const conditionX = x + 22;
     ctx.font = `${fontSize}px sans-serif`;
-    ctx.fillText(weatherData.condition, x + 22, y + titleFontSize + 6);
+    fillTextTruncated(ctx, weatherData.condition, conditionX, y + titleFontSize + 6, width - 22);
     
     // Line 3: Temperature (max/min) using explicit Number() to prevent string concatenation
     // Bug fix: JMA API temps array may contain strings; Number() ensures numeric addition
@@ -174,7 +195,7 @@ const renderWeatherWidget = (
     const minTemp = temp - TEMP_VARIANCE;
     
     const tempText = `最高${maxTemp}°C 最低${minTemp}°C`;
-    ctx.fillText(tempText, x, y + titleFontSize + 4 + (fontSize + 4) + 4);
+    fillTextTruncated(ctx, tempText, x, y + titleFontSize + 4 + (fontSize + 4) + 4, width);
   }
 };
 
@@ -194,12 +215,12 @@ const renderGithubWidget = (
   // Title — use monospace font for better readability on e-paper
   ctx.font = `bold ${titleFontSize}px monospace`;
   const title = `GitHub - ${settings.username || '未設定'}`;
-  ctx.fillText(title, x, y);
+  fillTextTruncated(ctx, title, x, y, width);
   
   // Range text — monospace for consistent character widths
   ctx.font = `${fontSize}px monospace`;
   const rangeText = `${settings.range || 7}日間`;
-  ctx.fillText(rangeText, x, y + titleFontSize + 3);
+  fillTextTruncated(ctx, rangeText, x, y + titleFontSize + 3, width);
   
   // Get GitHub data if available
   const githubKey = settings.username || '';
@@ -312,7 +333,7 @@ const renderTodoWidget = (
     
     // Render up to 2 lines
     lines.slice(0, 2).forEach((line, index) => {
-      ctx.fillText(line, x, contentY + index * lineHeight);
+      fillTextTruncated(ctx, line, x, contentY + index * lineHeight, width);
     });
   }
 };
