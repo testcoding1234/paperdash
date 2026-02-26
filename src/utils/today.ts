@@ -18,8 +18,11 @@ export const fetchTodayEvents = async (): Promise<TodayData> => {
   const dateKey = `${month}月${day}日`;
 
   try {
+    // Use mobile-sections API to get structured section data for the date article.
+    // The summary API only returns the intro paragraph (calendar description),
+    // not the actual "できごと" (events) list.
     const response = await fetch(
-      `https://ja.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(dateKey)}`
+      `https://ja.wikipedia.org/api/rest_v1/page/mobile-sections/${encodeURIComponent(dateKey)}`
     );
 
     if (!response.ok) {
@@ -28,15 +31,23 @@ export const fetchTodayEvents = async (): Promise<TodayData> => {
 
     const data = await response.json();
 
-    // Extract sentences from the description as event items
-    const extract: string = data.extract || '';
-    // Split by Japanese sentence boundaries and take meaningful snippets
-    const sentences = extract
-      .split(/[。\n]/)
-      .map((s: string) => s.trim())
-      .filter((s: string) => s.length > 0 && s.length <= 40);
+    // Find the "できごと" (events) section among the remaining sections
+    const sections = Array.isArray(data?.remaining?.sections)
+      ? (data.remaining.sections as Array<Record<string, unknown>>)
+      : [];
+    const eventsSection = sections.find((s) => s['line'] === 'できごと');
 
-    const events = sentences.slice(0, 3);
+    let events: string[] = [];
+
+    if (typeof eventsSection?.['text'] === 'string') {
+      // Parse the HTML to extract list items via DOMParser
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(eventsSection['text'], 'text/html');
+      events = Array.from(doc.querySelectorAll('li'))
+        .map((li) => li.textContent?.trim() ?? '')
+        .filter((t) => t.length > 0)
+        .slice(0, 3);
+    }
 
     const result: TodayData = {
       date: dateKey,
