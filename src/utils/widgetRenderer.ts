@@ -16,23 +16,37 @@ const getScaledFonts = (fontScale: number = 1) => ({
   titleFontSize: Math.max(11, Math.floor(TITLE_FONT_SIZE * fontScale)),
 });
 
-// Draw text truncated with ellipsis if wider than maxWidth
-const fillTextTruncated = (
+// Draw text wrapped across multiple lines within maxWidth.
+// Returns the number of lines rendered (capped at maxLines).
+const fillTextWrapped = (
   ctx: CanvasRenderingContext2D,
   text: string,
   x: number,
   y: number,
-  maxWidth: number
-): void => {
+  maxWidth: number,
+  lineHeight: number,
+  maxLines: number = 1
+): number => {
   if (ctx.measureText(text).width <= maxWidth) {
     ctx.fillText(text, x, y);
-    return;
+    return 1;
   }
-  let truncated = text;
-  while (truncated.length > 1 && ctx.measureText(truncated + '…').width > maxWidth) {
-    truncated = truncated.slice(0, -1);
+  const lines: string[] = [];
+  let remaining = text;
+  while (remaining.length > 0 && lines.length < maxLines) {
+    let i = remaining.length;
+    while (i > 0 && ctx.measureText(remaining.slice(0, i)).width > maxWidth) {
+      i--;
+    }
+    // Always advance at least one character to avoid stalling
+    const advance = Math.max(i, 1);
+    lines.push(remaining.slice(0, advance));
+    remaining = remaining.slice(advance);
   }
-  ctx.fillText(truncated + '…', x, y);
+  lines.forEach((line, index) => {
+    ctx.fillText(line, x, y + index * lineHeight);
+  });
+  return lines.length;
 };
 
 // Optional live data that can be passed to renderer
@@ -176,7 +190,7 @@ const renderWeatherWidget = (
 
   // Line 1: Title + location combined into one line with full-width space
   ctx.font = `bold ${titleFontSize}px sans-serif`;
-  fillTextTruncated(ctx, `天気\u3000${locationName}`, x, y, width);
+  fillTextWrapped(ctx, `天気\u3000${locationName}`, x, y, width, titleFontSize + 4);
   
   if (weatherData) {
     // Line 2: Emoji and condition
@@ -186,7 +200,7 @@ const renderWeatherWidget = (
     
     const conditionX = x + 22;
     ctx.font = `${fontSize}px sans-serif`;
-    fillTextTruncated(ctx, weatherData.condition, conditionX, y + titleFontSize + 6, width - 22);
+    fillTextWrapped(ctx, weatherData.condition, conditionX, y + titleFontSize + 6, width - 22, fontSize + 4);
     
     // Line 3: Temperature (max/min) using explicit Number() to prevent string concatenation
     // Bug fix: JMA API temps array may contain strings; Number() ensures numeric addition
@@ -195,7 +209,7 @@ const renderWeatherWidget = (
     const minTemp = temp - TEMP_VARIANCE;
     
     const tempText = `最高${maxTemp}°C 最低${minTemp}°C`;
-    fillTextTruncated(ctx, tempText, x, y + titleFontSize + 4 + (fontSize + 4) + 4, width);
+    fillTextWrapped(ctx, tempText, x, y + titleFontSize + 4 + (fontSize + 4) + 4, width, fontSize + 4);
   }
 };
 
@@ -215,12 +229,12 @@ const renderGithubWidget = (
   // Title — use monospace font for better readability on e-paper
   ctx.font = `bold ${titleFontSize}px monospace`;
   const title = `GitHub - ${settings.username || '未設定'}`;
-  fillTextTruncated(ctx, title, x, y, width);
+  fillTextWrapped(ctx, title, x, y, width, titleFontSize + 4);
   
   // Range text — monospace for consistent character widths
   ctx.font = `${fontSize}px monospace`;
   const rangeText = `${settings.range || 7}日間`;
-  fillTextTruncated(ctx, rangeText, x, y + titleFontSize + 3, width);
+  fillTextWrapped(ctx, rangeText, x, y + titleFontSize + 3, width, fontSize + 4);
   
   // Get GitHub data if available
   const githubKey = settings.username || '';
@@ -333,7 +347,7 @@ const renderTodoWidget = (
     
     // Render up to 2 lines
     lines.slice(0, 2).forEach((line, index) => {
-      fillTextTruncated(ctx, line, x, contentY + index * lineHeight, width);
+      fillTextWrapped(ctx, line, x, contentY + index * lineHeight, width, lineHeight);
     });
   }
 };
@@ -362,14 +376,11 @@ const renderTodayWidget = (
 
   const events = todayData?.events || ['データなし'];
 
-  events.slice(0, 3).forEach((event, index) => {
+  // Render each event with wrapping (up to 2 lines per event, max 2 events to fit height)
+  let currentY = contentY;
+  events.slice(0, 2).forEach((event) => {
     const text = `・${event}`;
-    // Truncate if too wide
-    let displayText = text;
-    while (ctx.measureText(displayText).width > width && displayText.length > 2) {
-      displayText = displayText.slice(0, -1);
-    }
-    if (displayText !== text) displayText = displayText.slice(0, -1) + '…';
-    ctx.fillText(displayText, x, contentY + index * lineHeight);
+    const linesUsed = fillTextWrapped(ctx, text, x, currentY, width, lineHeight, 2);
+    currentY += linesUsed * lineHeight;
   });
 };
